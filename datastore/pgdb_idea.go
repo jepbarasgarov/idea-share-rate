@@ -674,33 +674,6 @@ func (d *PgAccess) CheckAllMechanicsArePresent(
 	return
 }
 
-func (d *PgAccess) MechanicUpsert(
-	ctx context.Context,
-	Mechanics string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.MechanicUpsert",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		_, err = conn.Exec(ctx, sqlUpsertMechanic, Mechanics)
-		if err != nil {
-			eMsg := "error in sqlUpsertMechanic"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) MechanicUpdate(
 	ctx context.Context,
 	MechUpdate models.MechanicUpdate,
@@ -1039,7 +1012,7 @@ func (d *MgAccess) GenreUpsert(
 
 	_, err = coll.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
-		eMsg := "error in Upserting position"
+		eMsg := "error in Upserting genre"
 		clog.WithError(err).Error(eMsg)
 		err = errors.Wrap(err, eMsg)
 		return
@@ -1115,6 +1088,42 @@ func (d *MgAccess) GenreDelete(
 	if err != nil {
 		eMsg := "Error in genre delete"
 		clog.WithError(err).Error(eMsg)
+		return
+	}
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
+	return
+}
+
+// MECHANICS
+
+func (d *MgAccess) MechanicUpsert(
+	ctx context.Context,
+	Mechanics string,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.MechanicUpsert",
+	})
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("mechanic")
+
+	filter := bson.M{"name": Mechanics}
+	update := bson.M{"$set": bson.M{"name": Mechanics}}
+	opts := options.Update().SetUpsert(true)
+
+	_, err = coll.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		eMsg := "error in Upserting Mechanics"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
 		return
 	}
 	if err != nil {

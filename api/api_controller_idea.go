@@ -434,25 +434,6 @@ func (api *APIController) MechanicList(
 	return
 }
 
-func (api *APIController) MechanicCreate(
-	ctx context.Context,
-	mechanic string,
-) (item *string, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.MechanicCreate",
-	})
-	err = api.access.MechanicUpsert(ctx, mechanic)
-	if err != nil {
-		eMsg := "error in api.access.GenreUpsert"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	item = &mechanic
-	return
-}
-
 func (api *APIController) MechanicUpdate(
 	ctx context.Context,
 	MechUpdate models.MechanicUpdate,
@@ -790,5 +771,26 @@ func (api *APIController) GenreDelete(
 		return
 	}
 
+	return
+}
+
+//MECHANICS
+
+func (api *APIController) MechanicCreate(
+	ctx context.Context,
+	mechanic string,
+) (item *string, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.MechanicCreate",
+	})
+	err = api.access.MechanicUpsert(ctx, mechanic)
+	if err != nil {
+		eMsg := "error in api.access.GenreUpsert"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	item = &mechanic
 	return
 }
