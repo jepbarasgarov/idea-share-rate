@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -676,50 +677,6 @@ func (d *PgAccess) MechanicUpdate(
 
 // CRITERIA
 
-func (d *PgAccess) CriteriaGetByName(
-	ctx context.Context,
-	criteriaName string,
-) (item *string, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaGetByName",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-		var ID string
-		row := conn.QueryRow(ctx, sqlgetCriteriaByName, criteriaName)
-		err = row.Scan(
-			&ID,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = nil
-				item = nil
-				return
-			}
-			eMsg := "error in sqlgetCriteriaByName"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = &ID
-
-		return
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) CriteriaGetByID(
 	ctx context.Context,
 	ID string,
@@ -756,34 +713,6 @@ func (d *PgAccess) CriteriaGetByID(
 		return
 	})
 
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
-func (d *PgAccess) CriteriaCreate(
-	ctx context.Context,
-	CriteriaName string,
-) (item *models.CriteriaSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaCreate",
-	})
-	item = &models.CriteriaSpecData{}
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		row := conn.QueryRow(ctx, sqlCreateCriteria, CriteriaName)
-		err = row.Scan(&item.ID)
-		if err != nil {
-			eMsg := "error in sqlCreateCriteria"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item.Name = CriteriaName
-		return
-	})
 	if err != nil {
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
@@ -1149,5 +1078,83 @@ func (d *MgAccess) MechanicDelete(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+	return
+}
+
+//CRITERIA
+
+func (d *MgAccess) CriteriaCreate(
+	ctx context.Context,
+	CriteriaName string,
+) (item *models.CriteriaSpecData, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaCreate",
+	})
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	row, err := coll.InsertOne(ctx, bson.D{
+		{Key: "name", Value: CriteriaName},
+	})
+	if err != nil {
+		eMsg := "An error occurred on Insert one"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	item = &models.CriteriaSpecData{
+		ID:   row.InsertedID.(primitive.ObjectID).Hex(),
+		Name: CriteriaName,
+	}
+	return
+}
+
+func (d *MgAccess) CriteriaGetByName(
+	ctx context.Context,
+	criteriaName string,
+) (item *string, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaGetByName",
+	})
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	var u bson.M
+	err = coll.FindOne(ctx, bson.M{"name": criteriaName}).Decode(&u)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = nil
+			item = nil
+			return
+		}
+		eMsg := "Error in Find worker with ID"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	id := u["_id"].(primitive.ObjectID).Hex()
+	item = &id
+
 	return
 }

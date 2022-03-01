@@ -1051,65 +1051,6 @@ func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 
 //CRITERIA
 
-func (s *Server) HandleCriteriaCreate(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleCriteriaCreate"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	CriteriaName := r.FormValue("name")
-	if len(CriteriaName) == 0 || len(CriteriaName) > 256 {
-		eMsg := "Criteria name length is not compatible"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-
-	data, err := s.c.CriteriaCreate(ctx, cu, CriteriaName)
-	if err != nil {
-		eMsg := "error in s.c.CriteriaCreate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-
-	Resp := responses.CriteriaSpecData{
-		ID:   data.ID,
-		Name: data.Name,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, cu.Language)
-
-	clog.Info(handleName + " success")
-}
-
 func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleCriteriaUpdate"
 
@@ -1291,6 +1232,7 @@ func (s *Server) HandleCriteriaList(w http.ResponseWriter, r *http.Request) {
 
 ////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////////////////
 
+//Genre
 func (s *Server) HandleGenreCreate(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleGenreCreate"
 
@@ -1564,5 +1506,66 @@ func (s *Server) HandleMechanicDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, nil, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+//Criteria
+
+func (s *Server) HandleCriteriaCreate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleCriteriaCreate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	CriteriaName := r.FormValue("name")
+	if len(CriteriaName) == 0 || len(CriteriaName) > 256 {
+		eMsg := "Criteria name length is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	data, err := s.c.CriteriaCreate(ctx, cu, CriteriaName)
+	if err != nil {
+		eMsg := "error in s.c.CriteriaCreate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	Resp := responses.CriteriaSpecData{
+		ID:   data.ID,
+		Name: data.Name,
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Resp, clog, cu.Language)
+
 	clog.Info(handleName + " success")
 }

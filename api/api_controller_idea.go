@@ -480,43 +480,6 @@ func (api *APIController) MechanicUpdate(
 
 //CRITERIA
 
-func (api *APIController) CriteriaCreate(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	CriteriaName string,
-) (item *models.CriteriaSpecData, err error) {
-
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.CriteriaCreate",
-		"username": cu.Username,
-	})
-
-	criteriaID, err := api.access.CriteriaGetByName(ctx, CriteriaName)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaGetByName"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if criteriaID != nil {
-		eMsg := "Criteria name is in use"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_CRITERIA)
-		return
-	}
-
-	item, err = api.access.CriteriaCreate(ctx, CriteriaName)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaCreate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 func (api *APIController) CriteriaUpdate(
 	ctx context.Context,
 	cu *responses.ActionInfo,
@@ -788,6 +751,45 @@ func (api *APIController) MechanicDelete(
 	err = api.access.MechanicDelete(ctx, mechanic)
 	if err != nil {
 		eMsg := "error in api.access.MechanicDelete"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	return
+}
+
+//CRITERIA
+
+func (api *APIController) CriteriaCreate(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	CriteriaName string,
+) (item *models.CriteriaSpecData, err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.CriteriaCreate",
+		"username": cu.Username,
+	})
+
+	criteriaID, err := api.access.CriteriaGetByName(ctx, CriteriaName)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaGetByName"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if criteriaID != nil {
+		eMsg := "Criteria name is in use"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_CRITERIA)
+		return
+	}
+
+	item, err = api.access.CriteriaCreate(ctx, CriteriaName)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaCreate"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
