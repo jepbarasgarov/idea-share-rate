@@ -677,74 +677,6 @@ func (d *PgAccess) MechanicUpdate(
 
 // CRITERIA
 
-func (d *PgAccess) CriteriaGetByID(
-	ctx context.Context,
-	ID string,
-) (item *models.CriteriaSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaGetByID",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-		item = &models.CriteriaSpecData{}
-		row := conn.QueryRow(ctx, sqlgetCriteriaByID, ID)
-		err = row.Scan(
-			&item.ID,
-			&item.Name,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = nil
-				item = nil
-				return
-			}
-			eMsg := "error in sqlgetCriteriaByID"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
-func (d *PgAccess) CriteriaUpdate(
-	ctx context.Context,
-	criter *models.CriteriaUpdate,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaUpdate",
-	})
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		_, err = conn.Exec(ctx, sqlUpdateCriteria, criter.Name, time.Now().UTC(), criter.ID)
-		if err != nil {
-			eMsg := "error in sqlUpdateCriteria"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) CountCriteriaRates(
 	ctx context.Context,
 	ID string,
@@ -1148,13 +1080,91 @@ func (d *MgAccess) CriteriaGetByName(
 			item = nil
 			return
 		}
-		eMsg := "Error in Find worker with ID"
+		eMsg := "Error in Find criteria with name"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
 
 	id := u["_id"].(primitive.ObjectID).Hex()
 	item = &id
+
+	return
+}
+
+func (d *MgAccess) CriteriaGetByID(
+	ctx context.Context,
+	ID string,
+) (item *models.CriteriaSpecData, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaGetByID",
+	})
+	item = &models.CriteriaSpecData{}
+
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	var u bson.M
+	objID, err := primitive.ObjectIDFromHex(ID)
+	err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&u)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = nil
+			item = nil
+			return
+		}
+		eMsg := "Error in Find criteria with ID"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	item.ID = u["_id"].(primitive.ObjectID).Hex()
+	item.Name = u["name"].(string)
+
+	return
+}
+
+func (d *MgAccess) CriteriaUpdate(
+	ctx context.Context,
+	criter *models.CriteriaUpdate,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaUpdate",
+	})
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+	objID, err := primitive.ObjectIDFromHex(criter.ID)
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": bson.M{"name": criter.Name}}
+
+	_, err = coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		eMsg := "error in Update criteria"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
 
 	return
 }

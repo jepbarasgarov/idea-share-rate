@@ -480,58 +480,6 @@ func (api *APIController) MechanicUpdate(
 
 //CRITERIA
 
-func (api *APIController) CriteriaUpdate(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	criteria *models.CriteriaUpdate,
-) (err error) {
-
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.CriteriaUpdate",
-		"username": cu.Username,
-	})
-
-	criterGotByID, err := api.access.CriteriaGetByID(ctx, criteria.ID)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if criterGotByID == nil {
-		eMsg := "Criteria not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
-		return
-	}
-
-	criterIDGotByName, err := api.access.CriteriaGetByName(ctx, criteria.Name)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaGetByName"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if criterIDGotByName != nil && *criterIDGotByName != criterGotByID.ID {
-		eMsg := "Criteria name is in use"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_CRITERIA)
-		return
-	}
-
-	err = api.access.CriteriaUpdate(ctx, criteria)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaUpdate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 func (api *APIController) CriteriaDelete(
 	ctx context.Context,
 	ID string,
@@ -790,6 +738,58 @@ func (api *APIController) CriteriaCreate(
 	item, err = api.access.CriteriaCreate(ctx, CriteriaName)
 	if err != nil {
 		eMsg := "error in api.access.CriteriaCreate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	return
+}
+
+func (api *APIController) CriteriaUpdate(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	criteria *models.CriteriaUpdate,
+) (err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.CriteriaUpdate",
+		"username": cu.Username,
+	})
+
+	criterGotByID, err := api.access.CriteriaGetByID(ctx, criteria.ID)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaGetByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if criterGotByID == nil {
+		eMsg := "Criteria not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+		return
+	}
+
+	criterIDGotByName, err := api.access.CriteriaGetByName(ctx, criteria.Name)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaGetByName"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if criterIDGotByName != nil && *criterIDGotByName != criterGotByID.ID {
+		eMsg := "Criteria name is in use"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_CRITERIA)
+		return
+	}
+
+	err = api.access.CriteriaUpdate(ctx, criteria)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaUpdate"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return

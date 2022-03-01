@@ -17,6 +17,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //IDEA
@@ -1051,76 +1052,6 @@ func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 
 //CRITERIA
 
-func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleCriteriaUpdate"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	var criteria models.CriteriaUpdate
-
-	_, err = uuid.FromString(r.FormValue("id"))
-	if err != nil {
-		eMsg := "Criteria ID is not compatible"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-	criteria.ID = r.FormValue("id")
-
-	criteria.Name = r.FormValue("name")
-	if len(criteria.Name) == 0 || len(criteria.Name) > 256 {
-		eMsg := "Criteria name length is not compatible"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-
-	err = s.c.CriteriaUpdate(ctx, cu, &criteria)
-	if err != nil {
-		eMsg := "error in s.c.CriteriaUpdate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-
-	Resp := responses.CriteriaSpecData{
-		ID:   criteria.ID,
-		Name: criteria.Name,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, cu.Language)
-
-	clog.Info(handleName + " success")
-}
-
 func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleCriteriaDelete"
 
@@ -1562,6 +1493,76 @@ func (s *Server) HandleCriteriaCreate(w http.ResponseWriter, r *http.Request) {
 	Resp := responses.CriteriaSpecData{
 		ID:   data.ID,
 		Name: data.Name,
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Resp, clog, cu.Language)
+
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleCriteriaUpdate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	var criteria models.CriteriaUpdate
+
+	isValid := primitive.IsValidObjectID(r.FormValue("id"))
+	if !isValid {
+		eMsg := "Criteria ID is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+	criteria.ID = r.FormValue("id")
+
+	criteria.Name = r.FormValue("name")
+	if len(criteria.Name) == 0 || len(criteria.Name) > 256 {
+		eMsg := "Criteria name length is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = s.c.CriteriaUpdate(ctx, cu, &criteria)
+	if err != nil {
+		eMsg := "error in s.c.CriteriaUpdate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	Resp := responses.CriteriaSpecData{
+		ID:   criteria.ID,
+		Name: criteria.Name,
 	}
 
 	err = responses.ErrOK
