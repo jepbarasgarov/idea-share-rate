@@ -1049,58 +1049,6 @@ func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 	clog.Info(handleName + " success")
 }
 
-func (s *Server) HandleMechanicDelete(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleMechanicDelete"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-
-	_, err = s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	mechanic := r.FormValue("mechanic")
-	if len(mechanic) == 0 || len(mechanic) > 256 {
-		emsg := "mechanic name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = s.c.MechanicDelete(ctx, mechanic)
-	if err != nil {
-		eMsg := "error in s.c.MechanicDelete"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, nil, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 //CRITERIA
 
 func (s *Server) HandleCriteriaCreate(w http.ResponseWriter, r *http.Request) {
@@ -1564,5 +1512,57 @@ func (s *Server) HandleMechanicList(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, *data, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleMechanicDelete(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleMechanicDelete"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	_, err = s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	mechanic := r.FormValue("mechanic")
+	if len(mechanic) == 0 || len(mechanic) > 256 {
+		emsg := "mechanic name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = s.c.MechanicDelete(ctx, mechanic)
+	if err != nil {
+		eMsg := "error in s.c.MechanicDelete"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, requestLang)
 	clog.Info(handleName + " success")
 }

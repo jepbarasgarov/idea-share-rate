@@ -478,48 +478,6 @@ func (api *APIController) MechanicUpdate(
 	return
 }
 
-func (api *APIController) MechanicDelete(
-	ctx context.Context,
-	mechanic string,
-) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.MechanicDelete",
-	})
-
-	mechList, err := api.access.MechanicList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.MechanicList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	var mechanicExist bool = false
-
-	for i := 0; i < len(*mechList); i++ {
-		if (*mechList)[i] == mechanic {
-			mechanicExist = true
-		}
-	}
-
-	if !mechanicExist {
-		eMsg := "mechanic not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
-		return
-	}
-
-	err = api.access.MechanicDelete(ctx, mechanic)
-	if err != nil {
-		eMsg := "error in api.access.MechanicDelete"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 //CRITERIA
 
 func (api *APIController) CriteriaCreate(
@@ -793,5 +751,47 @@ func (api *APIController) MechanicList(
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
+	return
+}
+
+func (api *APIController) MechanicDelete(
+	ctx context.Context,
+	mechanic string,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.MechanicDelete",
+	})
+
+	mechList, err := api.access.MechanicList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.MechanicList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	var mechanicExist bool = false
+
+	for i := 0; i < len(*mechList); i++ {
+		if (*mechList)[i] == mechanic {
+			mechanicExist = true
+		}
+	}
+
+	if !mechanicExist {
+		eMsg := "mechanic not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+		return
+	}
+
+	err = api.access.MechanicDelete(ctx, mechanic)
+	if err != nil {
+		eMsg := "error in api.access.MechanicDelete"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
 	return
 }

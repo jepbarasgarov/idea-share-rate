@@ -674,31 +674,6 @@ func (d *PgAccess) MechanicUpdate(
 	return
 }
 
-func (d *PgAccess) MechanicDelete(
-	ctx context.Context,
-	MechName string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.MechanicDelete",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		_, err = conn.Exec(ctx, sqlDeleteMechanic, MechName)
-		if err != nil {
-			eMsg := "error in sqlDeleteMechanic"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 // CRITERIA
 
 func (d *PgAccess) CriteriaGetByName(
@@ -1144,5 +1119,35 @@ func (d *MgAccess) MechanicList(
 		clog.WithError(err).Error(eMsg)
 	}
 
+	return
+}
+
+func (d *MgAccess) MechanicDelete(
+	ctx context.Context,
+	MechName string,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.MechanicDelete",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("mechanic")
+
+	_, err = coll.DeleteOne(ctx, bson.M{"name": MechName})
+	if err != nil {
+		eMsg := "Error in genre delete"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
 	return
 }
