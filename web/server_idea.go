@@ -984,58 +984,6 @@ func (s *Server) HandleGenreUpdate(w http.ResponseWriter, r *http.Request) {
 	clog.Info(handleName + " success")
 }
 
-func (s *Server) HandleGenreDelete(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleGenreDelete"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-
-	_, err = s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	genre := r.FormValue("genre")
-	if len(genre) == 0 || len(genre) > 256 {
-		emsg := "Genre name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = s.c.GenreDelete(ctx, genre)
-	if err != nil {
-		eMsg := "error in s.c.GenreDelete"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, nil, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 //MECHANICS
 func (s *Server) HandleMechanicList(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleMechanicList"
@@ -1561,5 +1509,57 @@ func (s *Server) HandleGenreList(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, *data, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleGenreDelete(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleGenreDelete"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	_, err = s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	genre := r.FormValue("genre")
+	if len(genre) == 0 || len(genre) > 256 {
+		emsg := "Genre name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = s.c.GenreDelete(ctx, genre)
+	if err != nil {
+		eMsg := "error in s.c.GenreDelete"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, requestLang)
 	clog.Info(handleName + " success")
 }

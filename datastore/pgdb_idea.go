@@ -613,31 +613,6 @@ func (d *PgAccess) GenreUpdate(
 	return
 }
 
-func (d *PgAccess) GenreDelete(
-	ctx context.Context,
-	GenreName string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.GenreDelete",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		_, err = conn.Exec(ctx, sqlDeleteGenre, GenreName)
-		if err != nil {
-			eMsg := "error in sqlDeleteGenre"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 // MECHANICS
 func (d *PgAccess) MechanicList(
 	ctx context.Context,
@@ -1112,6 +1087,36 @@ func (d *MgAccess) GenreList(
 
 	item = &GENRES
 
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
+	return
+}
+
+func (d *MgAccess) GenreDelete(
+	ctx context.Context,
+	GenreName string,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.GenreDelete",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("genre")
+
+	_, err = coll.DeleteOne(ctx, bson.M{"name": GenreName})
+	if err != nil {
+		eMsg := "Error in genre delete"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
 	if err != nil {
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)

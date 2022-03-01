@@ -417,48 +417,6 @@ func (api *APIController) GenreUpdate(
 	return
 }
 
-func (api *APIController) GenreDelete(
-	ctx context.Context,
-	genre string,
-) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.GenreDelete",
-	})
-
-	genreList, err := api.access.GenreList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.GenreUpsert"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	var genreExist bool = false
-
-	for i := 0; i < len(*genreList); i++ {
-		if (*genreList)[i] == genre {
-			genreExist = true
-		}
-	}
-
-	if !genreExist {
-		eMsg := "Genre not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
-		return
-	}
-
-	err = api.access.GenreDelete(ctx, genre)
-	if err != nil {
-		eMsg := "error in api.access.GenreDelete"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 //MECHANICS
 func (api *APIController) MechanicList(
 	ctx context.Context,
@@ -790,5 +748,47 @@ func (api *APIController) GenreList(
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
+	return
+}
+
+func (api *APIController) GenreDelete(
+	ctx context.Context,
+	genre string,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.GenreDelete",
+	})
+
+	genreList, err := api.access.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreUpsert"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	var genreExist bool = false
+
+	for i := 0; i < len(*genreList); i++ {
+		if (*genreList)[i] == genre {
+			genreExist = true
+		}
+	}
+
+	if !genreExist {
+		eMsg := "Genre not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
+		return
+	}
+
+	err = api.access.GenreDelete(ctx, genre)
+	if err != nil {
+		eMsg := "error in api.access.GenreDelete"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
 	return
 }
