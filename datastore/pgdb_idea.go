@@ -614,39 +614,6 @@ func (d *PgAccess) GenreUpdate(
 }
 
 // MECHANICS
-func (d *PgAccess) MechanicList(
-	ctx context.Context,
-) (item *[]string, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.MechanicList",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		mechanics := make([]string, 0)
-		row := conn.QueryRow(ctx, sqlSelectMechanicssList)
-		err = row.Scan(&mechanics)
-		if err != nil {
-			eMsg := "error in sqlSelectMechanicssList"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = &mechanics
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 func (d *PgAccess) CheckAllMechanicsArePresent(
 	ctx context.Context,
@@ -1130,5 +1097,52 @@ func (d *MgAccess) MechanicUpsert(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+	return
+}
+
+func (d *MgAccess) MechanicList(
+	ctx context.Context,
+) (item *[]string, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.MechanicList",
+	})
+	MECHS := make([]string, 0)
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	db := client.Database("idea-share")
+	coll := db.Collection("mechanic")
+
+	cursor, err := coll.Find(ctx, bson.M{})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+	}
+	var mechanics []bson.M
+
+	for cursor.Next(ctx) {
+		if err = cursor.All(ctx, &mechanics); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	for i := 0; i < len(mechanics); i++ {
+		mech := mechanics[i]["name"].(string)
+		MECHS = append(MECHS, mech)
+	}
+
+	item = &MECHS
+
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
+
 	return
 }

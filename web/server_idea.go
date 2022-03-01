@@ -985,38 +985,6 @@ func (s *Server) HandleGenreUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 //MECHANICS
-func (s *Server) HandleMechanicList(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleMechanicList"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.MechanicList(ctx)
-	if err != nil {
-		eMsg := "error in s.c.MechanicList"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, *data, clog, requestLang)
-	clog.Info(handleName + " success")
-}
 
 func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleMechanicUpdate"
@@ -1563,5 +1531,38 @@ func (s *Server) HandleMechanicsCreate(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, data, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleMechanicList(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleMechanicList"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.MechanicList(ctx)
+	if err != nil {
+		eMsg := "error in s.c.MechanicList"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, *data, clog, requestLang)
 	clog.Info(handleName + " success")
 }

@@ -418,21 +418,6 @@ func (api *APIController) GenreUpdate(
 }
 
 //MECHANICS
-func (api *APIController) MechanicList(
-	ctx context.Context,
-) (item *[]string, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.MechanicList",
-	})
-	item, err = api.access.MechanicList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.MechanicList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
 
 func (api *APIController) MechanicUpdate(
 	ctx context.Context,
@@ -792,5 +777,21 @@ func (api *APIController) MechanicCreate(
 	}
 
 	item = &mechanic
+	return
+}
+
+func (api *APIController) MechanicList(
+	ctx context.Context,
+) (item *[]string, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.MechanicList",
+	})
+	item, err = api.access.MechanicList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.MechanicList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 	return
 }
