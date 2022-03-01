@@ -1,0 +1,25 @@
+{
+    "idea_file": {
+        "max_size": 10485760,
+        "allowed_extensions": [
+            "jpg",
+            "png",
+            "jpeg"
+        ],
+        "content_types": [
+            "image/jpeg",
+            "image/png"
+        ]
+    },
+    "jwt": {
+        "access_token_expiry": 3600,
+        "refresh_token_expiry": 86400,
+        "secret": "k547x6Dhm1xfuAtQpEdfg30fZ147nEcb59suGtdanLu0mXVhEooayMo8A7FVa3Ht"
+    },
+	"prefix_for_redis":{
+		"refresh_token":"USER_REFRESH_TOKEN:",
+        "ip_resrtict":"IP_RESTRICT_TEMPORARY:"
+	},
+    "static": "static",
+    "static_dir": "static"
+}

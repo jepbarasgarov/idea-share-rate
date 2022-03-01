@@ -1,0 +1,147 @@
+{
+    "ERR_NA": {
+        "TM": "Metoda rugsat berilmeýär",
+        "RU": "Metoda rugsat berilmeýär",
+        "EN": "method not allowed"
+    },
+    "ERR_BR": {
+        "TM": "Forma nädogry!",
+        "RU": "Forma nädogry!",
+        "EN": "Bad request"
+    },
+    "ERR_UA": {
+        "TM": "Ulgama birikdirilmediňiz!",
+        "RU": "Ulgama birikdirilmediňiz!",
+        "EN": "Unauthorized"
+    },
+    "ERR_FL": {
+        "TM": "Faýlyň göwrümi uly!",
+        "RU": "Faýlyň göwrümi uly!",
+        "EN": "Filesize is large"
+    },
+    "ERR_MR": {
+        "TM": "Köp teklip!",
+        "RU": "Köp teklip!",
+        "EN": "Too many request"
+    },
+    "ERR_IE": {
+        "TM": "Sistemanyň näsazlygy!",
+        "RU": "Sistemanyň näsazlygy!",
+        "EN": "Internal server error"
+    },
+    "ERR_NF_USER": {
+        "TM": "Ulanyjy tapylmady!",
+        "RU": "Ulanyjy tapylmady!",
+        "EN": "User not found"
+    },
+
+    "ERR_UNIQUE_USER": {
+        "TM": "Ulanyjy ady ulanyşda!",
+        "RU": "ulanyjy ady ulanyşda!!",
+        "EN": "Username name is in use"
+    },
+
+    "ERR_FB_USER": {
+        "TM": "Ulanyjy bu hereket gadagan!",
+        "RU": "Ulanyjy bu hereket gadagan!",
+        "EN": "User is forbidden!"
+    },
+    "ERR_FB_delete_USER": {
+        "TM": "Ulanyja özüni pozmak bolmaýar!",
+        "RU": "Ulanyja özüni pozmak bolmaýar!",
+        "EN": "User can't delete yourself"
+    },
+    "ERR_FB_owndata_USER": {
+        "TM": "Admin öz maglumatyny bu ýerde üýtgedip bilmeýär!",
+        "RU": "Admin öz maglumatyny bu ýerde üýtgedip bilmeýär!",
+        "EN": "Admin can't change his own data in here"
+    },
+    "ERR_FB_pwrd_USER": {
+        "TM": "Açar sözi gabat gelmeýär!",
+        "RU": "Açar sözi gabat gelmeýär!",
+        "EN": "Password doesn't match"
+    },
+    "ERR_FB_ownpwrd_USER": {
+        "TM": "Öz açar sözüňi bu ýerde üýtgetmek bolmaýar!",
+        "RU": "Öz açar sözüňi bu ýerde üýtgetmek bolmaýar!",
+        "EN": "Here you can't change your own password"
+    },
+
+    "ERR_FB_blocked_USER": {
+        "TM": "Ulanyjy bloklanan!",
+        "RU": "Ulanyjy bloklanan!",
+        "EN": "User has been blocked"
+    },
+
+    "ERR_NF_WORKER": {
+        "TM": "Işgär tapylmady!",
+        "RU": "Işgär tapylmady!",
+        "EN": "Worker not found"
+    },
+
+    "ERR_NF_IDEA": {
+        "TM": "Idea tapylmady!",
+        "RU": "Idea tapylmady!",
+        "EN": "Idea not found"
+    },
+
+    "ERR_NF_CRITERIA": {
+        "TM": "Kriteriýa tapylmady!",
+        "RU": "Kriteriýa tapylmady!",
+        "EN": "Criteria not found"
+    },
+
+    "ERR_UNIQUE_WORKER": {
+        "TM": "Işgäriň ady eýýäm ulanyşda!",
+        "RU": "Işgäriň ady eýýäm ulanyşda!",
+        "EN": "Worker name is in use"
+    },
+
+    "ERR_WORKER_HAS_IDEA": {
+        "TM": "Işgäriň ideasy bar!",
+        "RU": "Işgäriň ideasy bar!",
+        "EN": "Worker has some ideas"
+    },
+
+    "ERR_UNIQUE_CRITERIA": {
+        "TM": "Bu kriteriýa eýýäm bar!",
+        "RU": "Bu kriteriýa eýýäm bar!",
+        "EN": "This criteria name is in use exists"
+    },
+
+    "ERR_CRITERIA_HAS_RATES": {
+        "TM": "Bu kriteriýa boýunça baha berlen idealar bar!",
+        "RU": "Bu kriteriýa boýunça baha berlen idealar bar!",
+        "EN": "This criteria has some rates"
+    },
+
+    "ERR_NF_GENRE": {
+        "TM": "Žanr tapylmady!",
+        "RU": "Žanr tapylmady!",
+        "EN": "Genre not found"
+    },
+
+    "ERR_UNIQUE_GENRE": {
+        "TM": "Žanr eýýäm ulanyşda!",
+        "RU": "Žanr eýýäm ulanyşda!!",
+        "EN": "Genre is already in use"
+    },
+
+    "ERR_NF_MECH": {
+        "TM": "Mehanika tapylmady!",
+        "RU": "Mehanika tapylmady!",
+        "EN": "Mechanic not found"
+    },
+
+    "ERR_UNIQUE_MECH": {
+        "TM": "Mehanika eýýäm ulanyşda!",
+        "RU": "Mehanika eýýäm ulanyşda!!",
+        "EN": "Mechanics is already in use"
+    },
+
+    "ERR_IP_RESTRICTED": {
+        "TM": "Ip adresi üçin idea girizmek wagtlaýyn gadagan.",
+        "RU": "Ip adresi üçin idea girizmek wagtlaýyn gadagan.",
+        "EN": "You've submitted recently. Try later."
+    }
+}
