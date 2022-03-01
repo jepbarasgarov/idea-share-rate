@@ -579,39 +579,6 @@ func (d *PgAccess) IdeaRate(
 }
 
 // GENRE
-func (d *PgAccess) GenreList(
-	ctx context.Context,
-) (item *[]string, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.GenreList",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		genres := make([]string, 0)
-		row := conn.QueryRow(ctx, sqlSelectGenresList)
-		err = row.Scan(&genres)
-		if err != nil {
-			eMsg := "error in sqlSelectGenresList"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = &genres
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 func (d *PgAccess) GenreUpdate(
 	ctx context.Context,
@@ -1072,8 +1039,8 @@ func (d *PgAccess) CriteriaList(
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
-//GENRE
 
+//GENRE
 func (d *MgAccess) GenreUpsert(
 	ctx context.Context,
 	GenreName string,
@@ -1103,5 +1070,51 @@ func (d *MgAccess) GenreUpsert(
 		return
 	}
 
+	return
+}
+
+func (d *MgAccess) GenreList(
+	ctx context.Context,
+) (item *[]string, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.GenreList",
+	})
+
+	GENRES := make([]string, 0)
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("genre")
+
+	cursor, err := coll.Find(ctx, bson.M{})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+	}
+	var genres []bson.M
+
+	for cursor.Next(ctx) {
+		if err = cursor.All(ctx, &genres); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	for i := 0; i < len(genres); i++ {
+		ps := genres[i]["name"].(string)
+		GENRES = append(GENRES, ps)
+	}
+
+	item = &GENRES
+
+	if err != nil {
+		eMsg := "Error in d.runQuery()"
+		clog.WithError(err).Error(eMsg)
+	}
 	return
 }

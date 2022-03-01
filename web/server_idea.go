@@ -920,38 +920,6 @@ func (s *Server) HandleIdeaUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 //GENRE
-func (s *Server) HandleGenreList(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleGenreList"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.GenreList(ctx)
-	if err != nil {
-		eMsg := "error in s.c.GenreList"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, *data, clog, requestLang)
-	clog.Info(handleName + " success")
-}
 
 func (s *Server) HandleGenreUpdate(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleGenreUpdate"
@@ -1560,5 +1528,38 @@ func (s *Server) HandleGenreCreate(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, data, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleGenreList(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleGenreList"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in s.c.GenreList"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, *data, clog, requestLang)
 	clog.Info(handleName + " success")
 }

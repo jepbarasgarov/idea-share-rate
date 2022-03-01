@@ -357,21 +357,6 @@ func (api *APIController) IdeaRate(
 }
 
 //GENRE
-func (api *APIController) GenreList(
-	ctx context.Context,
-) (item *[]string, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.GenreList",
-	})
-	item, err = api.access.GenreList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.GenreList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
 
 func (api *APIController) GenreUpdate(
 	ctx context.Context,
@@ -789,5 +774,21 @@ func (api *APIController) GenreCreate(
 	}
 
 	item = &genre
+	return
+}
+
+func (api *APIController) GenreList(
+	ctx context.Context,
+) (item *[]string, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.GenreList",
+	})
+	item, err = api.access.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 	return
 }
