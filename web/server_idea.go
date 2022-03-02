@@ -1106,61 +1106,6 @@ func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
 	clog.Info(handleName + " success")
 }
 
-func (s *Server) HandleCriteriaList(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleCriteriaList"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-
-	_, err = s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.CriteriaList(ctx)
-	if err != nil {
-		eMsg := "error in s.c.CriteriaList"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Resp := make([]responses.CriteriaSpecData, 0)
-	for _, criter := range *data {
-		respCriter := responses.CriteriaSpecData{
-			ID:   criter.ID,
-			Name: criter.Name,
-		}
-
-		Resp = append(Resp, respCriter)
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 ////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////////////////
 
 //Genre
@@ -1568,5 +1513,60 @@ func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
 	err = responses.ErrOK
 	errs.SendResponse(w, err, Resp, clog, cu.Language)
 
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleCriteriaList(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleCriteriaList"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	_, err = s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.CriteriaList(ctx)
+	if err != nil {
+		eMsg := "error in s.c.CriteriaList"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Resp := make([]responses.CriteriaSpecData, 0)
+	for _, criter := range *data {
+		respCriter := responses.CriteriaSpecData{
+			ID:   criter.ID,
+			Name: criter.Name,
+		}
+
+		Resp = append(Resp, respCriter)
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Resp, clog, requestLang)
 	clog.Info(handleName + " success")
 }

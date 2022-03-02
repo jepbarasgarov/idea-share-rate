@@ -424,7 +424,7 @@ func (d *MgAccess) UserGetByUsername(
 	item.Role, _ = helpers.ConvertStringToUserRole(role)
 	status := u["status"].(string)
 	item.Status, _ = helpers.ConvertStringToUserStatus(status)
-	item.ID = u["_id"].(primitive.ObjectID).String()[10:34]
+	item.ID = u["_id"].(primitive.ObjectID).Hex()
 
 	return
 }

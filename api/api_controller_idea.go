@@ -531,22 +531,6 @@ func (api *APIController) CriteriaDelete(
 	return
 }
 
-func (api *APIController) CriteriaList(
-	ctx context.Context,
-) (item *[]models.CriteriaSpecData, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.CriteriaList",
-	})
-	item, err = api.access.CriteriaList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////
 
 //GENRE
@@ -795,5 +779,21 @@ func (api *APIController) CriteriaUpdate(
 		return
 	}
 
+	return
+}
+
+func (api *APIController) CriteriaList(
+	ctx context.Context,
+) (item *[]models.CriteriaSpecData, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.CriteriaList",
+	})
+	item, err = api.access.CriteriaList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 	return
 }

@@ -93,7 +93,7 @@ func (d *MgAccess) WorkerCreate(
 	}
 
 	item = &models.WorkerLightData{
-		ID:        row.InsertedID.(primitive.ObjectID).String()[10:34],
+		ID:        row.InsertedID.(primitive.ObjectID).Hex(),
 		Firstname: worker.Firstname,
 		Lastname:  worker.Lastname,
 		Position:  worker.Position,
@@ -253,7 +253,7 @@ func (d *MgAccess) WorkerAutocompleteList(
 
 	for i := 0; i < len(wrkrs); i++ {
 		w := models.WorkerLightData{
-			ID:        wrkrs[i]["_id"].(primitive.ObjectID).String()[10:34],
+			ID:        wrkrs[i]["_id"].(primitive.ObjectID).Hex(),
 			Firstname: wrkrs[i]["firstname"].(string),
 			Lastname:  wrkrs[i]["lastname"].(string),
 			Position:  wrkrs[i]["position"].(string),

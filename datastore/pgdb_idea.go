@@ -743,52 +743,6 @@ func (d *PgAccess) CriteriaDelete(
 	return
 }
 
-func (d *PgAccess) CriteriaList(
-	ctx context.Context,
-) (item *[]models.CriteriaSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaList",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		criteriaList := make([]models.CriteriaSpecData, 0)
-
-		rows, err := conn.Query(ctx, sqlSelectcriteriaList)
-		if err != nil {
-			eMsg := "error in sqlSelectcriteriaList"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		for rows.Next() {
-			criter := models.CriteriaSpecData{}
-			err = rows.Scan(&criter.ID, &criter.Name)
-			if err != nil {
-				eMsg := "error occured while scanning sqlSelectcriteriaList"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-			criteriaList = append(criteriaList, criter)
-		}
-
-		item = &criteriaList
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
 
 //GENRE
@@ -1166,5 +1120,51 @@ func (d *MgAccess) CriteriaUpdate(
 		clog.WithError(err).Error(eMsg)
 	}
 
+	return
+}
+
+func (d *MgAccess) CriteriaList(
+	ctx context.Context,
+) (item *[]models.CriteriaSpecData, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaList",
+	})
+
+	criterias := make([]models.CriteriaSpecData, 0)
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	cursor, err := coll.Find(ctx, bson.M{})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var crtrs []bson.M
+
+	for cursor.Next(ctx) {
+		if err = cursor.All(ctx, &crtrs); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	for i := 0; i < len(crtrs); i++ {
+		c := models.CriteriaSpecData{
+			ID:   crtrs[i]["_id"].(primitive.ObjectID).Hex(),
+			Name: crtrs[i]["name"].(string),
+		}
+
+		criterias = append(criterias, c)
+	}
+
+	item = &criterias
 	return
 }

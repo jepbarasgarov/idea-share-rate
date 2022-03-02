@@ -9,10 +9,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/joho/godotenv v1.4.0
-	github.com/kamva/mgm/v3 v3.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/xlzd/gotp v0.0.0-20181030022105-c8557ba2c119 // indirect
 	go.mongodb.org/mongo-driver v1.8.3
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
