@@ -66,40 +66,6 @@ const (
 
 //IDEA
 
-func (d *MgAccess) IdeaCreate(
-	ctx context.Context,
-	Idea *models.IdeaCreate,
-) (err error) {
-
-	_ = log.WithFields(log.Fields{
-		"method": "PgAccess.IdeaCreate",
-	})
-
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-
-	db := client.Database("idea-share")
-	coll := db.Collection("idea")
-
-	_, err = coll.InsertOne(ctx, bson.D{
-		{Key: "name", Value: Idea.Name},
-		{Key: "worker_Id", Value: Idea.WorkerID},
-		{Key: "date", Value: Idea.Date},
-		{Key: "genre", Value: Idea.Genre},
-		{Key: "mechanics", Value: Idea.Mechanics},
-		{Key: "links", Value: Idea.Links},
-		{Key: "description", Value: Idea.Description},
-		{Key: "paths", Value: Idea.Paths},
-	})
-
-	return
-
-}
-
 func (d *PgAccess) IdeaList(
 	ctx context.Context,
 	cu *responses.ActionInfo,
@@ -718,6 +684,41 @@ func (d *PgAccess) CriteriaDelete(
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
+
+//IDEA
+
+func (d *MgAccess) IdeaCreate(
+	ctx context.Context,
+	Idea *models.IdeaCreate,
+) (err error) {
+
+	_ = log.WithFields(log.Fields{
+		"method": "PgAccess.IdeaCreate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	db := client.Database("idea-share")
+	coll := db.Collection("idea")
+
+	_, err = coll.InsertOne(ctx, bson.D{
+		{Key: "name", Value: Idea.Name},
+		{Key: "worker_Id", Value: Idea.WorkerID},
+		{Key: "date", Value: Idea.Date},
+		{Key: "genre", Value: Idea.Genre},
+		{Key: "mechanics", Value: Idea.Mechanics},
+		{Key: "links", Value: Idea.Links},
+		{Key: "description", Value: Idea.Description},
+		{Key: "paths", Value: Idea.Paths},
+	})
+
+	return
+}
 
 //GENRE
 func (d *MgAccess) GenreUpsert(

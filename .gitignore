@@ -1,0 +1,14 @@
+.DS_Store
+vendor/
+config.json
+key.bin
+*.config.json
+.idea/
+static/
+.jpg
+.vscode/
+main.log
+.scannerwork
+Unix executable
+.env
+logs/*

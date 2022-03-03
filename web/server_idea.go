@@ -21,167 +21,6 @@ import (
 )
 
 //IDEA
-func (s *Server) HandleIdeaCreate(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleIdeaCreate"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	var Idea models.IdeaCreate
-	if len(r.FormValue("name")) == 0 || len(r.FormValue("name")) > 256 {
-		emsg := "Idea name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	Idea.Name = r.FormValue("name")
-
-	_, err = uuid.FromString(r.FormValue("worker_id"))
-	Idea.WorkerID = r.FormValue("worker_id")
-	if err != nil {
-		emsg := "Worker ID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Idea.Date, err = helpers.ChangeStringToDate(r.FormValue("date"))
-	if err != nil || Idea.Date.IsZero() {
-		eMsg := "There is no such date"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	if len(r.FormValue("genre")) == 0 || len(r.FormValue("genre")) > 256 {
-		emsg := "Idea genre name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	Idea.Genre = r.FormValue("genre")
-
-	mechanics := make([]string, 0)
-	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
-	if err != nil {
-		eMsg := "Mechanics must be string"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	sort.Strings(mechanics)
-	mechs := len(mechanics)
-	if mechs > 0 {
-		if len(mechanics[0]) < 256 && len(mechanics[0]) > 0 {
-			Idea.Mechanics = append(Idea.Mechanics, mechanics[0])
-		}
-		if mechs > 1 {
-			for i := 1; i < mechs; i++ {
-				if mechanics[i] != mechanics[i-1] {
-					if len(mechanics[i]) < 256 && len(mechanics[i]) > 0 {
-						Idea.Mechanics = append(Idea.Mechanics, mechanics[i])
-					}
-				}
-			}
-		}
-	}
-
-	if len(Idea.Mechanics) == 0 {
-		eMsg := "There must be related mechanics"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Idea.Description = r.FormValue("description")
-
-	err = json.Unmarshal([]byte(r.FormValue("links")), &Idea.Links)
-	if err != nil {
-		eMsg := "Links must contain label and url"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	_, _, err = r.FormFile("files")
-	if err == nil {
-		fhs := r.MultipartForm.File["files"]
-		for _, fh := range fhs {
-			f, err := fh.Open()
-			if err != nil {
-				eMsg := "an error occurred on fh.Open"
-				clog.WithError(err).Error(eMsg)
-				err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-				errs.SendResponse(w, err, nil, clog, requestLang)
-				return
-			}
-
-			Idea.Files = append(Idea.Files, models.ParsedFile{
-				File:        f,
-				FileHeader:  fh,
-				ContentType: helpers.GetContentType(fh.Filename),
-			})
-		}
-
-		for _, pFile := range Idea.Files {
-			if !helpers.CheckFileContentType(pFile.ContentType, config.Conf.IdeaFile.ContentTypes) {
-				eMsg := fmt.Sprintf("content type isn't allowed: %s", pFile.FileHeader.Filename)
-				clog.WithError(err).Error(eMsg)
-				err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-				errs.SendResponse(w, err, nil, clog, requestLang)
-				return
-			}
-
-			if pFile.FileHeader.Size > config.Conf.IdeaFile.MaxSize {
-				eMsg := fmt.Sprintf("File size is too large file_name = %s", pFile.FileHeader.Filename)
-				clog.WithError(err).Error(eMsg)
-				err = errs.NewHttpErrorFileTooLarge(errs.ERR_FL)
-				errs.SendResponse(w, err, nil, clog, requestLang)
-				return
-			}
-
-			if len(pFile.FileHeader.Filename) > 256 {
-				eMsg := fmt.Sprintf("Filename is too big: %s", pFile.FileHeader.Filename)
-				clog.WithError(err).Error(eMsg)
-				err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-				errs.SendResponse(w, err, nil, clog, requestLang)
-				return
-			}
-		}
-	}
-
-	err = s.c.IdeaCreate(ctx, &Idea)
-	if err != nil {
-		eMsg := "error in s.c.IdeaCreate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, nil, clog, requestLang)
-	clog.Info(handleName + " success")
-}
 
 func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleIdeaList"
@@ -1107,6 +946,170 @@ func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////////////////
+
+//IDEA
+
+func (s *Server) HandleIdeaCreate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleIdeaCreate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var Idea models.IdeaCreate
+	if len(r.FormValue("name")) == 0 || len(r.FormValue("name")) > 256 {
+		emsg := "Idea name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	Idea.Name = r.FormValue("name")
+
+	isValidWprkerID := primitive.IsValidObjectID(r.FormValue("worker_id"))
+	Idea.WorkerID = r.FormValue("worker_id")
+	if !isValidWprkerID {
+		emsg := "Worker ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Idea.Date, err = helpers.ChangeStringToDate(r.FormValue("date"))
+	if err != nil || Idea.Date.IsZero() {
+		eMsg := "There is no such date"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	if len(r.FormValue("genre")) == 0 || len(r.FormValue("genre")) > 256 {
+		emsg := "Idea genre name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	Idea.Genre = r.FormValue("genre")
+
+	mechanics := make([]string, 0)
+	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
+	if err != nil {
+		eMsg := "Mechanics must be string"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	sort.Strings(mechanics)
+	mechs := len(mechanics)
+	if mechs > 0 {
+		if len(mechanics[0]) < 256 && len(mechanics[0]) > 0 {
+			Idea.Mechanics = append(Idea.Mechanics, mechanics[0])
+		}
+		if mechs > 1 {
+			for i := 1; i < mechs; i++ {
+				if mechanics[i] != mechanics[i-1] {
+					if len(mechanics[i]) < 256 && len(mechanics[i]) > 0 {
+						Idea.Mechanics = append(Idea.Mechanics, mechanics[i])
+					}
+				}
+			}
+		}
+	}
+
+	if len(Idea.Mechanics) == 0 {
+		eMsg := "There must be related mechanics"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Idea.Description = r.FormValue("description")
+
+	err = json.Unmarshal([]byte(r.FormValue("links")), &Idea.Links)
+	if err != nil {
+		eMsg := "Links must contain label and url"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	_, _, err = r.FormFile("files")
+	if err == nil {
+		fhs := r.MultipartForm.File["files"]
+		for _, fh := range fhs {
+			f, err := fh.Open()
+			if err != nil {
+				eMsg := "an error occurred on fh.Open"
+				clog.WithError(err).Error(eMsg)
+				err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+				errs.SendResponse(w, err, nil, clog, requestLang)
+				return
+			}
+
+			Idea.Files = append(Idea.Files, models.ParsedFile{
+				File:        f,
+				FileHeader:  fh,
+				ContentType: helpers.GetContentType(fh.Filename),
+			})
+		}
+
+		for _, pFile := range Idea.Files {
+			if !helpers.CheckFileContentType(pFile.ContentType, config.Conf.IdeaFile.ContentTypes) {
+				eMsg := fmt.Sprintf("content type isn't allowed: %s", pFile.FileHeader.Filename)
+				clog.WithError(err).Error(eMsg)
+				err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+				errs.SendResponse(w, err, nil, clog, requestLang)
+				return
+			}
+
+			if pFile.FileHeader.Size > config.Conf.IdeaFile.MaxSize {
+				eMsg := fmt.Sprintf("File size is too large file_name = %s", pFile.FileHeader.Filename)
+				clog.WithError(err).Error(eMsg)
+				err = errs.NewHttpErrorFileTooLarge(errs.ERR_FL)
+				errs.SendResponse(w, err, nil, clog, requestLang)
+				return
+			}
+
+			if len(pFile.FileHeader.Filename) > 256 {
+				eMsg := fmt.Sprintf("Filename is too big: %s", pFile.FileHeader.Filename)
+				clog.WithError(err).Error(eMsg)
+				err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+				errs.SendResponse(w, err, nil, clog, requestLang)
+				return
+			}
+		}
+	}
+
+	err = s.c.IdeaCreate(ctx, &Idea)
+	if err != nil {
+		eMsg := "error in s.c.IdeaCreate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, requestLang)
+	clog.Info(handleName + " success")
+}
 
 //Genre
 func (s *Server) HandleGenreCreate(w http.ResponseWriter, r *http.Request) {

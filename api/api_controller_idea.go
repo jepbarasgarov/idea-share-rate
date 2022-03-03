@@ -1,132 +1,20 @@
 package api
 
 import (
+	"belli/onki-game-ideas-mongo-backend/config"
 	"belli/onki-game-ideas-mongo-backend/errs"
+	"belli/onki-game-ideas-mongo-backend/helpers"
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
+	"os"
+	"path/filepath"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 //IDEA
-func (api *APIController) IdeaCreate(
-	ctx context.Context,
-	Idea *models.IdeaCreate,
-) (err error) {
-	// clog := log.WithContext(ctx).WithFields(log.Fields{
-	// 	"method": "api.IdeaCreate",
-	// })
-
-	// worker, err := api.access.Workerget(ctx, Idea.WorkerID)
-	// if err != nil {
-	// 	eMsg := "error in api.access.Workerget"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// if worker == nil {
-	// 	eMsg := "worker not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
-	// 	return
-	// }
-
-	// hasRestrctionForIP, err := api.cache.HasRestrctionForWorker(ctx, worker.Firstname+worker.Lastname)
-	// if err != nil {
-	// 	eMsg := "error ocurred while checking if ip has HasRestrctionForWorker"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// if hasRestrctionForIP {
-	// 	eMsg := "idea submit rate has not passed yet"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorConflict(errs.ERR_IP_RESTRICTED)
-	// 	return
-	// }
-
-	// genres, err := api.access.GenreList(ctx)
-	// if err != nil {
-	// 	eMsg := "error in api.access.GenreList"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// genreNum := len(*genres)
-	// var genreValid bool = false
-	// for i := 0; i < genreNum; i++ {
-	// 	if (*genres)[i] == Idea.Genre {
-	// 		genreValid = true
-	// 		break
-	// 	}
-	// }
-
-	// if !genreValid {
-	// 	eMsg := "Genre not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
-	// 	return
-	// }
-
-	// mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, Idea.Mechanics)
-	// if err != nil {
-	// 	eMsg := "error in api.access.CheckAllMechanicsArePresent"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// if !mechanicsValid {
-	// 	eMsg := "Mechanics not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
-	// 	return
-	// }
-
-	// return
-
-	// breakingIndex := -1
-	// for i, pFile := range Idea.Files {
-	// 	path, err := helpers.ProcessFile(ctx, config.Conf.StaticDir, &pFile)
-	// 	if err != nil {
-	// 		clog.WithError(err).Error("an error ocurred on converter.ProcessFile")
-	// 		breakingIndex = i
-	// 		break
-	// 	}
-	// 	Idea.Paths = append(Idea.Paths, path)
-	// }
-
-	// defer func() {
-	// 	if err != nil || breakingIndex != -1 {
-	// 		for _, path := range Idea.Paths {
-	// 			_ = os.Remove(filepath.Join(config.Conf.StaticDir, path))
-	// 		}
-	// 	}
-	// }()
-
-	// if breakingIndex != -1 {
-	// 	eMsg := "error ocurred while writing the files"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// err = api.access.IdeaCreate(ctx, Idea)
-	// if err != nil {
-	// 	eMsg := "error in api.access.IdeaCreate"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-
-	// _ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.Lastname, time.Minute*5)
-
-	return
-}
 
 func (api *APIController) IdeaList(
 	ctx context.Context,
@@ -536,6 +424,122 @@ func (api *APIController) CriteriaDelete(
 //////////////////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////
 
 //IDEA
+
+func (api *APIController) IdeaCreate(
+	ctx context.Context,
+	Idea *models.IdeaCreate,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaCreate",
+	})
+
+	worker, err := api.access.Workerget(ctx, Idea.WorkerID)
+	if err != nil {
+		eMsg := "error in api.access.Workerget"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if worker == nil {
+		eMsg := "worker not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
+		return
+	}
+
+	hasRestrctionForIP, err := api.cache.HasRestrctionForWorker(ctx, worker.Firstname+worker.Lastname)
+	if err != nil {
+		eMsg := "error ocurred while checking if ip has HasRestrctionForWorker"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if hasRestrctionForIP {
+		eMsg := "idea submit rate has not passed yet"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_IP_RESTRICTED)
+		return
+	}
+
+	genres, err := api.access.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	genreNum := len(*genres)
+	var genreValid bool = false
+	for i := 0; i < genreNum; i++ {
+		if (*genres)[i] == Idea.Genre {
+			genreValid = true
+			break
+		}
+	}
+
+	if !genreValid {
+		eMsg := "Genre not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
+		return
+	}
+
+	mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, Idea.Mechanics)
+	if err != nil {
+		eMsg := "error in api.access.CheckAllMechanicsArePresent"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if !mechanicsValid {
+		eMsg := "Mechanics not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+		return
+	}
+
+	breakingIndex := -1
+	for i, pFile := range Idea.Files {
+		path, err := helpers.ProcessFile(ctx, config.Conf.StaticDir, &pFile)
+		if err != nil {
+			clog.WithError(err).Error("an error ocurred on converter.ProcessFile")
+			breakingIndex = i
+			break
+		}
+		Idea.Paths = append(Idea.Paths, path)
+	}
+
+	defer func() {
+		if err != nil || breakingIndex != -1 {
+			for _, path := range Idea.Paths {
+				_ = os.Remove(filepath.Join(config.Conf.StaticDir, path))
+			}
+		}
+	}()
+
+	if breakingIndex != -1 {
+		eMsg := "error ocurred while writing the files"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	err = api.access.IdeaCreate(ctx, Idea)
+	if err != nil {
+		eMsg := "error in api.access.IdeaCreate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	_ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.Lastname, time.Minute*5)
+
+	return
+}
 
 //GENRE
 
