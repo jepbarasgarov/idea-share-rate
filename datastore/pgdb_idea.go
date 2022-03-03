@@ -616,32 +616,6 @@ func (d *PgAccess) GenreUpdate(
 
 // MECHANICS
 
-func (d *PgAccess) CheckAllMechanicsArePresent(
-	ctx context.Context,
-	mechList []string,
-) (item bool, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CheckAllMechanicsArePresent",
-	})
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		row := conn.QueryRow(ctx, sqlCheckMechanicsArePresent, mechList)
-		err = row.Scan(&item)
-		if err != nil {
-			eMsg := "error in sqlCheckMechanicsArePresent"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) MechanicUpdate(
 	ctx context.Context,
 	MechUpdate models.MechanicUpdate,
@@ -964,6 +938,50 @@ func (d *MgAccess) MechanicDelete(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+	return
+}
+
+func (d *MgAccess) CheckAllMechanicsArePresent(
+	ctx context.Context,
+	mechList []string,
+) (item bool, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CheckAllMechanicsArePresent",
+	})
+	item = false
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	groupStage := bson.D{{"$group", bson.D{{"_id", ""}, {"mechs", bson.D{{"$push", "$name"}}}}}}
+	matchStage := bson.D{{"$match", bson.D{{"mechs", bson.D{{"$all", mechList}}}}}}
+
+	cursor, err := coll.Aggregate(ctx, mongo.Pipeline{groupStage, matchStage})
+	if err != nil {
+		eMsg := "Error in aggregation of CheckAllMechanicsArePresent"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	var results []bson.M
+
+	for cursor.Next(ctx) {
+		if err = cursor.All(ctx, &results); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	if results != nil {
+		item = true
+	}
+
 	return
 }
 

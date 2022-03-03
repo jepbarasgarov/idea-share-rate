@@ -14,9 +14,9 @@ func (api *APIController) IdeaCreate(
 	ctx context.Context,
 	Idea *models.IdeaCreate,
 ) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaCreate",
-	})
+	// clog := log.WithContext(ctx).WithFields(log.Fields{
+	// 	"method": "api.IdeaCreate",
+	// })
 
 	// worker, err := api.access.Workerget(ctx, Idea.WorkerID)
 	// if err != nil {
@@ -87,6 +87,8 @@ func (api *APIController) IdeaCreate(
 	// 	return
 	// }
 
+	// return
+
 	// breakingIndex := -1
 	// for i, pFile := range Idea.Files {
 	// 	path, err := helpers.ProcessFile(ctx, config.Conf.StaticDir, &pFile)
@@ -113,13 +115,13 @@ func (api *APIController) IdeaCreate(
 	// 	return
 	// }
 
-	err = api.access.IdeaCreate(ctx, Idea)
-	if err != nil {
-		eMsg := "error in api.access.IdeaCreate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+	// err = api.access.IdeaCreate(ctx, Idea)
+	// if err != nil {
+	// 	eMsg := "error in api.access.IdeaCreate"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+	// 	return
+	// }
 
 	// _ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.Lastname, time.Minute*5)
 
@@ -532,6 +534,8 @@ func (api *APIController) CriteriaDelete(
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////
+
+//IDEA
 
 //GENRE
 
