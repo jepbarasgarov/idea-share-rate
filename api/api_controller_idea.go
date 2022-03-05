@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 //IDEA
@@ -94,157 +95,107 @@ func (api *APIController) IdeaDelete(
 	return
 }
 
-func (api *APIController) IdeaUpdate(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	newIdea *models.IdeaUpdate,
-) (item *models.IdeaSpecData, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaUpdate",
-	})
+// func (api *APIController) IdeaUpdate(
+// 	ctx context.Context,
+// 	cu *responses.ActionInfo,
+// 	newIdea *models.IdeaUpdate,
+// ) (item *models.IdeaSpecData, err error) {
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"method": "api.IdeaUpdate",
+// 	})
 
-	oldIdea, err := api.access.GetIdeaByID(ctx, cu, newIdea.ID)
-	if err != nil {
-		eMsg := "error in api.access.GetIdeaByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	oldIdea, err := api.access.GetIdeaByID(ctx, cu, newIdea.ID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.GetIdeaByID"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if oldIdea == nil {
-		eMsg := "Idea not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-		return
-	}
+// 	if oldIdea == nil {
+// 		eMsg := "Idea not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+// 		return
+// 	}
 
-	worker, err := api.access.Workerget(ctx, newIdea.WorkerID)
-	if err != nil {
-		eMsg := "error in api.access.Workerget"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	worker, err := api.access.Workerget(ctx, newIdea.WorkerID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.Workerget"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if worker == nil {
-		eMsg := "worker not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
-		return
-	}
+// 	if worker == nil {
+// 		eMsg := "worker not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
+// 		return
+// 	}
 
-	genres, err := api.access.GenreList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.GenreList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	genres, err := api.access.GenreList(ctx)
+// 	if err != nil {
+// 		eMsg := "error in api.access.GenreList"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	genreNum := len(*genres)
-	var genreValid bool = false
-	for i := 0; i < genreNum; i++ {
-		if (*genres)[i] == newIdea.Genre {
-			genreValid = true
-			break
-		}
-	}
+// 	genreNum := len(*genres)
+// 	var genreValid bool = false
+// 	for i := 0; i < genreNum; i++ {
+// 		if (*genres)[i] == newIdea.Genre {
+// 			genreValid = true
+// 			break
+// 		}
+// 	}
 
-	if !genreValid {
-		eMsg := "Genre not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
-		return
-	}
+// 	if !genreValid {
+// 		eMsg := "Genre not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
+// 		return
+// 	}
 
-	mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, newIdea.Mechanics)
-	if err != nil {
-		eMsg := "error in api.access.CheckAllMechanicsArePresent"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, newIdea.Mechanics)
+// 	if err != nil {
+// 		eMsg := "error in api.access.CheckAllMechanicsArePresent"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if !mechanicsValid {
-		eMsg := "Mechanics not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
-		return
-	}
+// 	if !mechanicsValid {
+// 		eMsg := "Mechanics not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+// 		return
+// 	}
 
-	err = api.access.IdeaUpdate(ctx, nil, newIdea)
-	if err != nil {
-		eMsg := "error in api.access.IdeaUpdate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	err = api.access.IdeaUpdate(ctx, nil, newIdea)
+// 	if err != nil {
+// 		eMsg := "error in api.access.IdeaUpdate"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	item = &models.IdeaSpecData{
-		ID:            newIdea.ID,
-		Name:          newIdea.Name,
-		Genre:         newIdea.Genre,
-		Description:   newIdea.Description,
-		Date:          newIdea.Date,
-		Mechanics:     newIdea.Mechanics,
-		Links:         newIdea.Links,
-		Worker:        *worker,
-		FilePaths:     oldIdea.FilePaths,
-		CriteriaRates: oldIdea.CriteriaRates,
-		OverallRate:   oldIdea.OverallRate,
-	}
-	return
-}
-
-func (api *APIController) IdeaRate(
-	ctx context.Context,
-	Rating *models.RateIdeaCritera,
-	cu *responses.ActionInfo,
-) (item *int, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaRate",
-	})
-
-	idea, err := api.access.GetIdeaByID(ctx, cu, Rating.IdeaID)
-	if err != nil {
-		eMsg := "error in api.access.GetIdeaByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if idea == nil {
-		eMsg := "idea not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-		return
-	}
-
-	criterNum := len(idea.CriteriaRates)
-	var criteriaExists bool = false
-	for i := 0; i < criterNum; i++ {
-		if idea.CriteriaRates[i].ID == Rating.CriteriaID {
-			criteriaExists = true
-			break
-		}
-	}
-
-	if !criteriaExists {
-		eMsg := "Criteria not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
-		return
-	}
-
-	item, err = api.access.IdeaRate(ctx, cu, nil, Rating)
-	if err != nil {
-		eMsg := "error in api.access.IdeaRate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
+// 	item = &models.IdeaSpecData{
+// 		ID:            newIdea.ID,
+// 		Name:          newIdea.Name,
+// 		Genre:         newIdea.Genre,
+// 		Description:   newIdea.Description,
+// 		Date:          newIdea.Date,
+// 		Mechanics:     newIdea.Mechanics,
+// 		Links:         newIdea.Links,
+// 		Worker:        *worker,
+// 		FilePaths:     oldIdea.FilePaths,
+// 		CriteriaRates: oldIdea.CriteriaRates,
+// 		OverallRate:   oldIdea.OverallRate,
+// 	}
+// 	return
+// }
 
 //GENRE
 
@@ -370,56 +321,56 @@ func (api *APIController) MechanicUpdate(
 
 //CRITERIA
 
-func (api *APIController) CriteriaDelete(
-	ctx context.Context,
-	ID string,
-	cu *responses.ActionInfo,
-) (err error) {
+// func (api *APIController) CriteriaDelete(
+// 	ctx context.Context,
+// 	ID string,
+// 	cu *responses.ActionInfo,
+// ) (err error) {
 
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.CriteriaDelete",
-		"username": cu.Username,
-	})
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"method":   "api.CriteriaDelete",
+// 		"username": cu.Username,
+// 	})
 
-	cirteriaGotByID, err := api.access.CriteriaGetByID(ctx, ID)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	if cirteriaGotByID == nil {
-		eMsg := "Criteria not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
-		return
-	}
+// 	cirteriaGotByID, err := api.access.CriteriaGetByID(ctx, ID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.CriteriaGetByID"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
+// 	if cirteriaGotByID == nil {
+// 		eMsg := "Criteria not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+// 		return
+// 	}
 
-	numOfRates, err := api.access.CountCriteriaRates(ctx, ID)
-	if err != nil {
-		eMsg := "error in api.access.CountCriteriaRates"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	numOfRates, err := api.access.CountCriteriaRates(ctx, ID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.CountCriteriaRates"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if numOfRates > 0 {
-		eMsg := "Criteria has some rates"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorForbidden(errs.ERR_CRITERIA_HAS_RATES)
-		return
-	}
+// 	if numOfRates > 0 {
+// 		eMsg := "Criteria has some rates"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorForbidden(errs.ERR_CRITERIA_HAS_RATES)
+// 		return
+// 	}
 
-	err = api.access.CriteriaDelete(ctx, nil, ID)
-	if err != nil {
-		eMsg := "error in api.access.CriteriaDelete"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	err = api.access.CriteriaDelete(ctx, nil, ID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.CriteriaDelete"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	return
-}
+// 	return
+// }
 
 //////////////////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////
 
@@ -433,7 +384,7 @@ func (api *APIController) IdeaCreate(
 		"method": "api.IdeaCreate",
 	})
 
-	worker, err := api.access.Workerget(ctx, Idea.WorkerID)
+	worker, err := api.access.Workerget(ctx, Idea.Worker.ID)
 	if err != nil {
 		eMsg := "error in api.access.Workerget"
 		clog.WithError(err).Error(eMsg)
@@ -447,8 +398,9 @@ func (api *APIController) IdeaCreate(
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
 		return
 	}
+	Idea.Worker = *worker
 
-	hasRestrctionForIP, err := api.cache.HasRestrctionForWorker(ctx, worker.Firstname+worker.Lastname)
+	hasRestrctionForWorker, err := api.cache.HasRestrctionForWorker(ctx, worker.Firstname+worker.LastName)
 	if err != nil {
 		eMsg := "error ocurred while checking if ip has HasRestrctionForWorker"
 		clog.WithError(err).Error(eMsg)
@@ -456,7 +408,7 @@ func (api *APIController) IdeaCreate(
 		return
 	}
 
-	if hasRestrctionForIP {
+	if hasRestrctionForWorker {
 		eMsg := "idea submit rate has not passed yet"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorConflict(errs.ERR_IP_RESTRICTED)
@@ -536,7 +488,78 @@ func (api *APIController) IdeaCreate(
 		return
 	}
 
-	_ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.Lastname, time.Minute*5)
+	_ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.LastName, time.Minute*5)
+
+	return
+}
+
+func (api *APIController) IdeaRate(
+	ctx context.Context,
+	Rating *models.RateIdeaCritera,
+	cu *responses.ActionInfo,
+) (item *int, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaRate",
+	})
+
+	// idea, err := api.access.GetIdeaByID(ctx, cu, Rating.IdeaID)
+	// if err != nil {
+	// 	eMsg := "error in api.access.GetIdeaByID"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+	// 	return
+	// }
+
+	// if idea == nil {
+	// 	eMsg := "idea not found"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+	// 	return
+	// }
+
+	// criterNum := len(idea.CriteriaRates)
+	// var criteriaExists bool = false
+	// for i := 0; i < criterNum; i++ {
+	// 	if idea.CriteriaRates[i].ID == Rating.CriteriaID {
+	// 		criteriaExists = true
+	// 		break
+	// 	}
+	// }
+
+	// if !criteriaExists {
+	// 	eMsg := "Criteria not found"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+	// 	return
+	// }
+
+	//TODO : idea barmy check et
+
+	criter, err := api.access.CriteriaGetByID(ctx, Rating.Rating.CriteriaID)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaGetByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if criter == nil {
+		eMsg := "Criteria not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+		return
+	}
+
+	Rating.Rating.CrieteriaName = criter.Name
+	Rating.Rating.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+
+	item, err = api.access.IdeaRate(ctx, Rating)
+	if err != nil {
+		eMsg := "error in api.access.IdeaRate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 
 	return
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Access interface {
@@ -62,22 +63,22 @@ type Access interface {
 	///////////////////////////////////////////////////////////////-----------WORKER
 	WorkerAutocompleteList(
 		ctx context.Context,
-	) (item *[]models.WorkerLightData, err error)
+	) (item *[]models.WorkerBsonModelInIdea, err error)
 
 	Workerget(
 		ctx context.Context,
-		ID string,
-	) (item *models.WorkerLightData, err error)
+		ID primitive.ObjectID,
+	) (item *models.WorkerBsonModelInIdea, err error)
 
 	WorkerCreate(
 		ctx context.Context,
 		worker *models.WorkerCreate,
-	) (item *models.WorkerLightData, err error)
+	) (item *models.WorkerBsonModelInIdea, err error)
 
 	WorkerUpdate(
 		ctx context.Context,
 		worker *models.WorkerUpdate,
-	) (item *models.WorkerLightData, err error)
+	) (item *models.WorkerBsonModelInIdea, err error)
 
 	CountWorkersIdea(
 		ctx context.Context,
@@ -86,7 +87,7 @@ type Access interface {
 
 	WorkerDelete(
 		ctx context.Context,
-		ID string,
+		ID primitive.ObjectID,
 	) (err error)
 
 	////////////////////////////////////////////////////////////////-----------POSITION
@@ -176,8 +177,6 @@ type Access interface {
 
 	IdeaRate(
 		ctx context.Context,
-		cu *responses.ActionInfo,
-		pTx pgx.Tx,
 		Rating *models.RateIdeaCritera,
 	) (item *int, err error)
 
@@ -194,7 +193,7 @@ type Access interface {
 
 	CriteriaGetByID(
 		ctx context.Context,
-		ID string,
+		ID primitive.ObjectID,
 	) (item *models.CriteriaSpecData, err error)
 
 	CriteriaUpdate(

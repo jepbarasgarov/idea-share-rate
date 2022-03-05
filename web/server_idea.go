@@ -464,87 +464,6 @@ func (s *Server) HandleIdeaGetPdf(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
-func (s *Server) HandleRateIdea(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleRateIdea"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-		responses.UserRoleUser,
-	}
-
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	var Rating models.RateIdeaCritera
-
-	_, err = uuid.FromString(r.FormValue("idea_id"))
-	if err != nil {
-		emsg := "Idea ID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	Rating.IdeaID = r.FormValue("idea_id")
-	_, err = uuid.FromString(r.FormValue("criteria_id"))
-	if err != nil {
-		emsg := "Criteria ID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Rating.CriteriaID = r.FormValue("criteria_id")
-
-	Rating.Rate, err = strconv.Atoi(r.FormValue("rate"))
-	if err != nil || Rating.Rate <= 0 || Rating.Rate >= 11 {
-		emsg := "Rate value is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.IdeaRate(ctx, &Rating, cu)
-	if err != nil {
-		eMsg := "error in s.c.IdeaCreate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Resp := responses.OverAllRate{
-		Rate: *data,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 func (s *Server) HandleIdeaDelete(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleIdeaDelete"
 
@@ -623,7 +542,7 @@ func (s *Server) HandleIdeaUpdate(w http.ResponseWriter, r *http.Request) {
 		responses.UserRoleAdmin,
 	}
 
-	cu, err := s.UserRequirments(ctx, w, r, roles)
+	_, err = s.UserRequirments(ctx, w, r, roles)
 	if err != nil {
 		eMsg := "UserRequirments error in " + handleName
 		clog.WithError(err).Error(eMsg)
@@ -727,36 +646,36 @@ func (s *Server) HandleIdeaUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := s.c.IdeaUpdate(ctx, cu, &IdeaUpdate)
-	if err != nil {
-		eMsg := "error in s.c.IdeaUpdate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+	// data, err := s.c.IdeaUpdate(ctx, cu, &IdeaUpdate)
+	// if err != nil {
+	// 	eMsg := "error in s.c.IdeaUpdate"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	errs.SendResponse(w, err, nil, clog, requestLang)
+	// 	return
+	// }
 
-	Resp := responses.IdeaSpecData{
-		ID:          data.ID,
-		Name:        data.Name,
-		Genre:       data.Genre,
-		Description: data.Description,
-		Worker: responses.WorkerLightData{
-			ID:        data.Worker.ID,
-			Firstname: data.Worker.Firstname,
-			Lastname:  data.Worker.Lastname,
-			Position:  data.Worker.Position,
-		},
-		Date:          data.Date,
-		Mechanics:     data.Mechanics,
-		Links:         data.Links,
-		FilePaths:     data.FilePaths,
-		CriteriaRates: data.CriteriaRates,
-		OverallRate:   data.OverallRate,
-	}
+	// Resp := responses.IdeaSpecData{
+	// 	ID:          data.ID,
+	// 	Name:        data.Name,
+	// 	Genre:       data.Genre,
+	// 	Description: data.Description,
+	// 	Worker: responses.WorkerLightData{
+	// 		ID:        data.Worker.ID,
+	// 		Firstname: data.Worker.Firstname,
+	// 		Lastname:  data.Worker.Lastname,
+	// 		Position:  data.Worker.Position,
+	// 	},
+	// 	Date:          data.Date,
+	// 	Mechanics:     data.Mechanics,
+	// 	Links:         data.Links,
+	// 	FilePaths:     data.FilePaths,
+	// 	CriteriaRates: data.CriteriaRates,
+	// 	OverallRate:   data.OverallRate,
+	// }
 
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
-	clog.Info(handleName + " success")
+	// err = responses.ErrOK
+	// errs.SendResponse(w, err, Resp, clog, requestLang)
+	// clog.Info(handleName + " success")
 }
 
 //GENRE
@@ -891,59 +810,59 @@ func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 
 //CRITERIA
 
-func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleCriteriaDelete"
+// func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
+// 	handleName := "HandleCriteriaDelete"
 
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
+// 	ctx := r.Context()
+// 	ipAddress, err := helpers.GetIP(r)
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"remote-addr": ipAddress,
+// 		"uri":         r.RequestURI,
+// 	})
 
-	requestLang := helpers.GetRequestLang(r)
+// 	requestLang := helpers.GetRequestLang(r)
 
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	if err != nil {
+// 		eMsg := "couldn't get ip address"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	roles := []responses.UserRole{
+// 		responses.UserRoleAdmin,
+// 	}
+// 	cu, err := s.UserRequirments(ctx, w, r, roles)
+// 	if err != nil {
+// 		eMsg := "UserRequirments error in " + handleName
+// 		clog.WithError(err).Error(eMsg)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	ID, err := uuid.FromString(mux.Vars(r)["id"])
-	if err != nil {
-		eMsg := "criteria ID is not compatible"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
+// 	ID, err := uuid.FromString(mux.Vars(r)["id"])
+// 	if err != nil {
+// 		eMsg := "criteria ID is not compatible"
+// 		clog.Error(eMsg)
+// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+// 		errs.SendResponse(w, err, nil, clog, cu.Language)
+// 		return
+// 	}
 
-	err = s.c.CriteriaDelete(ctx, ID.String(), cu)
-	if err != nil {
-		eMsg := "error in s.c.CriteriaDelete"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
+// 	err = s.c.CriteriaDelete(ctx, ID.String(), cu)
+// 	if err != nil {
+// 		eMsg := "error in s.c.CriteriaDelete"
+// 		clog.WithError(err).Error(eMsg)
+// 		errs.SendResponse(w, err, nil, clog, cu.Language)
+// 		return
+// 	}
 
-	err = responses.ErrOK
-	errs.SendResponse(w, err, nil, clog, cu.Language)
+// 	err = responses.ErrOK
+// 	errs.SendResponse(w, err, nil, clog, cu.Language)
 
-	clog.Info(handleName + " success")
-}
+// 	clog.Info(handleName + " success")
+// }
 
 ////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////////////////
 
@@ -979,9 +898,8 @@ func (s *Server) HandleIdeaCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	Idea.Name = r.FormValue("name")
 
-	isValidWprkerID := primitive.IsValidObjectID(r.FormValue("worker_id"))
-	Idea.WorkerID = r.FormValue("worker_id")
-	if !isValidWprkerID {
+	Idea.Worker.ID, err = primitive.ObjectIDFromHex(r.FormValue("worker_id"))
+	if err != nil {
 		emsg := "Worker ID is not compatible"
 		clog.WithError(err).Error(emsg)
 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
@@ -1108,6 +1026,84 @@ func (s *Server) HandleIdeaCreate(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, nil, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleRateIdea(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleRateIdea"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+		responses.UserRoleUser,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var Rating models.RateIdeaCritera
+
+	Rating.IdeaID, err = primitive.ObjectIDFromHex(r.FormValue("idea_id"))
+	if err != nil {
+		emsg := "Idea ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	Rating.Rating.CriteriaID, err = primitive.ObjectIDFromHex(r.FormValue("criteria_id"))
+	if err != nil {
+		emsg := "Criteria ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Rating.Rating.Rate, err = strconv.Atoi(r.FormValue("rate"))
+	if err != nil || Rating.Rating.Rate <= 0 || Rating.Rating.Rate >= 11 {
+		emsg := "Rate value is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.IdeaRate(ctx, &Rating, cu)
+	if err != nil {
+		eMsg := "error in s.c.IdeaCreate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Resp := responses.OverAllRate{
+		Rate: *data,
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Resp, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 
@@ -1481,15 +1477,14 @@ func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	var criteria models.CriteriaUpdate
 
-	isValid := primitive.IsValidObjectID(r.FormValue("id"))
-	if !isValid {
+	criteria.ID, err = primitive.ObjectIDFromHex(r.FormValue("id"))
+	if err != nil {
 		eMsg := "Criteria ID is not compatible"
 		clog.Error(eMsg)
 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
 		errs.SendResponse(w, err, nil, clog, cu.Language)
 		return
 	}
-	criteria.ID = r.FormValue("id")
 
 	criteria.Name = r.FormValue("name")
 	if len(criteria.Name) == 0 || len(criteria.Name) > 256 {
@@ -1509,7 +1504,7 @@ func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Resp := responses.CriteriaSpecData{
-		ID:   criteria.ID,
+		ID:   criteria.ID.Hex(),
 		Name: criteria.Name,
 	}
 

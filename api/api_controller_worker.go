@@ -7,6 +7,7 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 /////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
@@ -15,7 +16,7 @@ func (api *APIController) WorkerCreate(
 	ctx context.Context,
 	worker *models.WorkerCreate,
 	cu *responses.ActionInfo,
-) (item *models.WorkerLightData, err error) {
+) (item *models.WorkerBsonModelInIdea, err error) {
 
 	clog := log.WithContext(ctx).WithFields(log.Fields{
 		"method":   "api.WorkerCreate",
@@ -43,14 +44,14 @@ func (api *APIController) WorkerCreate(
 
 func (api *APIController) WorkerGetByID(
 	ctx context.Context,
-	id string,
+	ID primitive.ObjectID,
 	cu *responses.ActionInfo,
-) (item *models.WorkerLightData, err error) {
+) (item *models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithContext(ctx).WithFields(log.Fields{
 		"method": "api.WorkerGetByID",
 	})
 
-	item, err = api.access.Workerget(ctx, id)
+	item, err = api.access.Workerget(ctx, ID)
 	if err != nil {
 		eMsg := "error in api.access.Workerget"
 		clog.WithError(err).Error(eMsg)
@@ -68,7 +69,7 @@ func (api *APIController) WorkerGetByID(
 
 func (api *APIController) WorkerDelete(
 	ctx context.Context,
-	ID string,
+	ID primitive.ObjectID,
 	cu *responses.ActionInfo,
 ) (err error) {
 
@@ -121,7 +122,7 @@ func (api *APIController) WorkerUpdate(
 	ctx context.Context,
 	worker *models.WorkerUpdate,
 	cu *responses.ActionInfo,
-) (item *models.WorkerLightData, err error) {
+) (item *models.WorkerBsonModelInIdea, err error) {
 
 	clog := log.WithContext(ctx).WithFields(log.Fields{
 		"method":   "api.WorkerUpdate",
@@ -163,7 +164,7 @@ func (api *APIController) WorkerUpdate(
 
 func (api *APIController) WorkerAutoCompleteList(
 	ctx context.Context,
-) (item *[]models.WorkerLightData, err error) {
+) (item *[]models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithContext(ctx).WithFields(log.Fields{
 		"method": "api.WorkerAutoCompleteList",
 	})

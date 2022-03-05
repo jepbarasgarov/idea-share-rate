@@ -1,5 +1,7 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type WorkerCreate struct {
 	Firstname string
 	Lastname  string
@@ -7,7 +9,7 @@ type WorkerCreate struct {
 }
 
 type WorkerUpdate struct {
-	ID        string
+	ID        primitive.ObjectID
 	Firstname string
 	Lastname  string
 	Position  string
@@ -18,4 +20,13 @@ type WorkerLightData struct {
 	Firstname string
 	Lastname  string
 	Position  string
+}
+
+//////////////////////////////////////////////////////////////////////BSON////////////////////////////////////////////////////////////////////////////////
+
+type WorkerBsonModelInIdea struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Firstname string             `bson:"firstname,omitempty" json:"firstname"`
+	LastName  string             `bson:"lastname,omitempty" json:"lastname"`
+	Position  string             `bson:"position,omitempty" json:"position"`
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 /////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////
@@ -81,15 +82,8 @@ func (s *Server) HandleWorkerCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Resp := responses.WorkerLightData{
-		ID:        data.ID,
-		Firstname: data.Firstname,
-		Lastname:  data.Lastname,
-		Position:  data.Position,
-	}
-
 	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, cu.Language)
+	errs.SendResponse(w, err, data, clog, cu.Language)
 
 	clog.Info(handleName + " success")
 }
@@ -126,7 +120,14 @@ func (s *Server) HandleWorkerGetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := mux.Vars(r)["id"]
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		emsg := "worker ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
 
 	data, err := s.c.WorkerGetByID(ctx, id, cu)
 	if err != nil {
@@ -136,15 +137,8 @@ func (s *Server) HandleWorkerGetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Resp := responses.WorkerLightData{
-		ID:        data.ID,
-		Firstname: data.Firstname,
-		Lastname:  data.Lastname,
-		Position:  data.Position,
-	}
-
 	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 
@@ -179,7 +173,14 @@ func (s *Server) HandleWorkerDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ID := mux.Vars(r)["id"]
+	ID, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		emsg := "worker ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
 
 	err = s.c.WorkerDelete(ctx, ID, cu)
 	if err != nil {
@@ -228,8 +229,14 @@ func (s *Server) HandleWorkerUpdate(w http.ResponseWriter, r *http.Request) {
 
 	var worker models.WorkerUpdate
 
-	worker.ID = r.FormValue("id")
-
+	worker.ID, err = primitive.ObjectIDFromHex(r.FormValue("id"))
+	if err != nil {
+		emsg := "worker ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
 	worker.Firstname = r.FormValue("firstname")
 	if len(worker.Firstname) == 0 || len(worker.Firstname) > 64 {
 		eMsg := "firstname length is not compatible"
@@ -264,15 +271,8 @@ func (s *Server) HandleWorkerUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Resp := responses.WorkerLightData{
-		ID:        data.ID,
-		Firstname: data.Firstname,
-		Lastname:  data.Lastname,
-		Position:  data.Position,
-	}
-
 	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, cu.Language)
+	errs.SendResponse(w, err, data, clog, cu.Language)
 
 	clog.Info(handleName + " success")
 }
@@ -304,19 +304,9 @@ func (s *Server) HandleWorkerAutocompleteList(w http.ResponseWriter, r *http.Req
 		errs.SendResponse(w, err, nil, clog, requestLang)
 		return
 	}
-	Resp := make([]responses.WorkerLightData, 0)
-	for _, worker := range *data {
-		respWorker := responses.WorkerLightData{
-			ID:        worker.ID,
-			Firstname: worker.Firstname,
-			Lastname:  worker.Lastname,
-			Position:  worker.Position,
-		}
-		Resp = append(Resp, respWorker)
-	}
 
 	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 

@@ -264,145 +264,6 @@ func (d *PgAccess) IdeaList(
 	return
 }
 
-func (d *PgAccess) GetIdeaByID(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	ID string,
-) (item *models.IdeaSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.GetIdeaByID",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		item = &models.IdeaSpecData{}
-
-		row := conn.QueryRow(ctx, sqlGetIdeaByID, ID)
-		err = row.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Date,
-			&item.Description,
-			&item.Genre,
-			&item.Mechanics,
-			&item.Worker.ID,
-			&item.Worker.Firstname,
-			&item.Worker.Lastname,
-			&item.Worker.Position,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = nil
-				item = nil
-			}
-			eMsg := "error in sqlGetByID"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		links, err := conn.Query(ctx, sqlGetIdeaLinks, ID)
-		if err != nil {
-			eMsg := "error in sqlGetIdeaLinks"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		for links.Next() {
-			link := responses.Link{}
-			err = links.Scan(&link.Label, &link.URL)
-			if err != nil {
-				eMsg := "error in sqlGetIdeaLinks"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-			item.Links = append(item.Links, link)
-		}
-
-		files, err := conn.Query(ctx, sqlGetIdeaSketchPaths, ID)
-		if err != nil {
-			eMsg := "error in sqlGetIdeaSketchPaths"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		for files.Next() {
-			sketch := responses.Sketch{}
-			err = files.Scan(&sketch.ID, &sketch.Name, &sketch.FilePath)
-			if err != nil {
-				eMsg := "error in sqlGetIdeaSketchPaths"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-			item.FilePaths = append(item.FilePaths, sketch)
-		}
-
-		rates, err := conn.Query(ctx, sqlGetRatesOfUserToIdea, cu.ID, ID)
-		if err != nil {
-			eMsg := "error in sqlGetRatesOfUserToIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		var totalRate int
-		for rates.Next() {
-			criter := responses.CriteriaRate{}
-			var rate *int
-			err = rates.Scan(&criter.ID, &criter.Name, &rate)
-
-			if err != nil {
-				eMsg := "error in CriteriaRate"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-			if rate != nil {
-				criter.Rate = *rate
-			}
-			totalRate += criter.Rate
-			item.CriteriaRates = append(item.CriteriaRates, criter)
-		}
-		if totalRate != 0 {
-			rate := conn.QueryRow(ctx, sqlGetOverAllRateIdea, ID)
-			var rateNum, rateSum int
-			err = rate.Scan(&rateNum, &rateSum)
-			if err != nil {
-				eMsg := "error in sqlGetOverAllRateIdea"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-			if rateNum != 0 {
-				point := float64(rateSum) / float64(rateNum)
-				under := point - float64(int(point))
-				upper := 1 - under
-				if under >= upper {
-					item.OverallRate = int(point) + 1
-				} else {
-					item.OverallRate = int(point)
-				}
-
-			}
-		}
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) IdeaDelete(
 	ctx context.Context,
 	ID string,
@@ -475,66 +336,6 @@ func (d *PgAccess) IdeaUpdate(
 				return
 			}
 		}
-
-		return false, nil
-	})
-	if err != nil {
-		eMsg := "error in d.runInTX()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
-func (d *PgAccess) IdeaRate(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	pTx pgx.Tx,
-	Rating *models.RateIdeaCritera,
-) (item *int, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.IdeaCreate",
-	})
-	err = d.runInTx(ctx, pTx, clog, func(tx pgx.Tx) (rollback bool, err error) {
-		rollback = true
-		_, err = tx.Exec(ctx, sqlRateIdea, Rating.IdeaID, Rating.CriteriaID, cu.ID, Rating.Rate, time.Now().UTC())
-		if err != nil {
-			eMsg := "error in sqlRateIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		_, err = tx.Exec(ctx, sqlUpsertIdeaUserRel, cu.ID, Rating.IdeaID)
-		if err != nil {
-			eMsg := "error in sqlUpsertIdeaUserRel"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		rate := tx.QueryRow(ctx, sqlGetOverAllRateIdea, Rating.IdeaID)
-		var rateNum, rateSum int
-		err = rate.Scan(&rateNum, &rateSum)
-		if err != nil {
-			eMsg := "error in sqlGetOverAllRateIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		overAllRate := 0
-		if rateNum != 0 {
-			point := float64(rateSum) / float64(rateNum)
-			under := point - float64(int(point))
-			upper := 1 - under
-			if under >= upper {
-				overAllRate = int(point) + 1
-			} else {
-				overAllRate = int(point)
-			}
-
-		}
-		item = &overAllRate
 
 		return false, nil
 	})
@@ -706,16 +507,65 @@ func (d *MgAccess) IdeaCreate(
 	db := client.Database("idea-share")
 	coll := db.Collection("idea")
 
+	rates := make([]models.RatingStructInIdea, 0)
+
 	_, err = coll.InsertOne(ctx, bson.D{
 		{Key: "name", Value: Idea.Name},
-		{Key: "worker_Id", Value: Idea.WorkerID},
+		{Key: "worker", Value: Idea.Worker},
 		{Key: "date", Value: Idea.Date},
 		{Key: "genre", Value: Idea.Genre},
 		{Key: "mechanics", Value: Idea.Mechanics},
 		{Key: "links", Value: Idea.Links},
 		{Key: "description", Value: Idea.Description},
 		{Key: "paths", Value: Idea.Paths},
+		{Key: "rates", Value: rates},
 	})
+
+	return
+}
+
+func (d *MgAccess) IdeaRate(
+	ctx context.Context,
+	Rating *models.RateIdeaCritera,
+) (item *int, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IdeaRate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	db := client.Database("idea-share")
+	coll := db.Collection("idea")
+
+	MatchStage := bson.M{"_id": Rating.IdeaID}
+	removeOldRating := bson.M{"$pull": bson.M{"rates": bson.M{"user_id": Rating.Rating.UserID, "criteria_id": Rating.Rating.CriteriaID}}}
+	addNewRating := bson.M{"$push": bson.M{"rates": Rating.Rating}}
+
+	_, err = coll.UpdateOne(ctx, MatchStage, removeOldRating)
+	if err != nil {
+		eMsg := "error in removing old rating"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	_, err = coll.UpdateOne(ctx, MatchStage, addNewRating)
+	if err != nil {
+		eMsg := "error in addng new rate"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	//TODO: total gaytarmagy gos
+
+	var averageRate int
+	item = &averageRate
 
 	return
 }
@@ -1066,7 +916,7 @@ func (d *MgAccess) CriteriaGetByName(
 
 func (d *MgAccess) CriteriaGetByID(
 	ctx context.Context,
-	ID string,
+	ID primitive.ObjectID,
 ) (item *models.CriteriaSpecData, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.CriteriaGetByID",
@@ -1087,8 +937,7 @@ func (d *MgAccess) CriteriaGetByID(
 	coll := db.Collection("criteria")
 
 	var u bson.M
-	objID, err := primitive.ObjectIDFromHex(ID)
-	err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&u)
+	err = coll.FindOne(ctx, bson.M{"_id": ID}).Decode(&u)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = nil
@@ -1121,9 +970,8 @@ func (d *MgAccess) CriteriaUpdate(
 	}
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
-	objID, err := primitive.ObjectIDFromHex(criter.ID)
 
-	filter := bson.M{"_id": objID}
+	filter := bson.M{"_id": criter.ID}
 	update := bson.M{"$set": bson.M{"name": criter.Name}}
 
 	_, err = coll.UpdateOne(ctx, filter, update)
@@ -1133,6 +981,8 @@ func (d *MgAccess) CriteriaUpdate(
 		err = errors.Wrap(err, eMsg)
 		return
 	}
+
+	// TODO: idealaryn icinden hem update et
 
 	if err != nil {
 		eMsg := "Error in d.runQuery()"

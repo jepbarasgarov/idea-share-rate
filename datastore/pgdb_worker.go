@@ -62,7 +62,7 @@ func (d *PgAccess) CountWorkersIdea(
 func (d *MgAccess) WorkerCreate(
 	ctx context.Context,
 	worker *models.WorkerCreate,
-) (item *models.WorkerLightData, err error) {
+) (item *models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.WorkerCreate",
 	})
@@ -92,10 +92,10 @@ func (d *MgAccess) WorkerCreate(
 		return
 	}
 
-	item = &models.WorkerLightData{
-		ID:        row.InsertedID.(primitive.ObjectID).Hex(),
+	item = &models.WorkerBsonModelInIdea{
+		ID:        row.InsertedID.(primitive.ObjectID),
 		Firstname: worker.Firstname,
-		Lastname:  worker.Lastname,
+		LastName:  worker.Lastname,
 		Position:  worker.Position,
 	}
 
@@ -104,13 +104,11 @@ func (d *MgAccess) WorkerCreate(
 
 func (d *MgAccess) Workerget(
 	ctx context.Context,
-	ID string,
-) (item *models.WorkerLightData, err error) {
+	ID primitive.ObjectID,
+) (item *models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.Workerget",
 	})
-
-	item = &models.WorkerLightData{}
 
 	defer func() {
 		if err != nil {
@@ -125,10 +123,8 @@ func (d *MgAccess) Workerget(
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
-	var u bson.M
-	objID, err := primitive.ObjectIDFromHex(ID)
-	fmt.Println(err)
-	err = coll.FindOne(ctx, bson.M{"_id": objID}).Decode(&u)
+	var u models.WorkerBsonModelInIdea
+	err = coll.FindOne(ctx, bson.M{"_id": ID}).Decode(&u)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = nil
@@ -140,17 +136,14 @@ func (d *MgAccess) Workerget(
 		return
 	}
 
-	item.ID = u["_id"].(primitive.ObjectID).Hex()
-	item.Firstname = u["firstname"].(string)
-	item.Lastname = u["lastname"].(string)
-	item.Position = u["position"].(string)
+	item = &u
 
 	return
 }
 
 func (d *MgAccess) WorkerDelete(
 	ctx context.Context,
-	ID string,
+	ID primitive.ObjectID,
 ) (err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.WorkerDelete",
@@ -165,9 +158,7 @@ func (d *MgAccess) WorkerDelete(
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
-	objID, _ := primitive.ObjectIDFromHex(ID)
-
-	_, err = coll.DeleteOne(ctx, bson.M{"_id": objID})
+	_, err = coll.DeleteOne(ctx, bson.M{"_id": ID})
 	if err != nil {
 		eMsg := "Error in Find worker with ID"
 		clog.WithError(err).Error(eMsg)
@@ -180,7 +171,7 @@ func (d *MgAccess) WorkerDelete(
 func (d *MgAccess) WorkerUpdate(
 	ctx context.Context,
 	worker *models.WorkerUpdate,
-) (item *models.WorkerLightData, err error) {
+) (item *models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.WorkerUpdate",
 	})
@@ -191,15 +182,16 @@ func (d *MgAccess) WorkerUpdate(
 		return
 	}
 	db := client.Database("idea-share")
-	coll := db.Collection("worker")
+	workerColl := db.Collection("worker")
+	ideaColl := db.Collection("idea")
 
-	objID, _ := primitive.ObjectIDFromHex(worker.ID)
+	filterWorker := bson.M{"_id": worker.ID}
+	filterWorkerInIdea := bson.M{"worker._id": worker.ID}
 
-	filter := bson.M{"_id": objID}
+	updateWorker := bson.M{"$set": bson.M{"firstname": worker.Firstname, "lastname": worker.Lastname, "position": worker.Position}}
+	updateWorkerInIdea := bson.M{"$set": bson.M{"worker.firstname": worker.Firstname, "worker.lastname": worker.Lastname, "worker.position": worker.Position}}
 
-	update := bson.M{"$set": bson.M{"firstname": worker.Firstname, "lastname": worker.Lastname, "position": worker.Position}}
-
-	_, err = coll.UpdateOne(ctx, filter, update)
+	_, err = workerColl.UpdateOne(ctx, filterWorker, updateWorker)
 	if err != nil {
 		eMsg := "error in Updating worker"
 		clog.WithError(err).Error(eMsg)
@@ -207,10 +199,17 @@ func (d *MgAccess) WorkerUpdate(
 		return
 	}
 
-	item = &models.WorkerLightData{
+	_, err = ideaColl.UpdateMany(ctx, filterWorkerInIdea, updateWorkerInIdea)
+	if err != nil {
+		eMsg := "error in Updating worker from related idea's"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+	item = &models.WorkerBsonModelInIdea{
 		ID:        worker.ID,
 		Firstname: worker.Firstname,
-		Lastname:  worker.Lastname,
+		LastName:  worker.Lastname,
 		Position:  worker.Position,
 	}
 
@@ -220,12 +219,11 @@ func (d *MgAccess) WorkerUpdate(
 
 func (d *MgAccess) WorkerAutocompleteList(
 	ctx context.Context,
-) (item *[]models.WorkerLightData, err error) {
+) (item *[]models.WorkerBsonModelInIdea, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.WorkerAutocompleteList",
 	})
 
-	workers := make([]models.WorkerLightData, 0)
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
 		fmt.Println(err)
@@ -241,28 +239,15 @@ func (d *MgAccess) WorkerAutocompleteList(
 		clog.WithError(err).Error(eMsg)
 		return
 	}
-	var wrkrs []bson.M
+	var wrkrs []models.WorkerBsonModelInIdea
 
-	for cursor.Next(ctx) {
-		if err = cursor.All(ctx, &wrkrs); err != nil {
-			eMsg := "Error in reading cursor"
-			clog.WithError(err).Error(eMsg)
-			return
-		}
+	if err = cursor.All(ctx, &wrkrs); err != nil {
+		eMsg := "Error in reading cursor"
+		clog.WithError(err).Error(eMsg)
+		return
 	}
 
-	for i := 0; i < len(wrkrs); i++ {
-		w := models.WorkerLightData{
-			ID:        wrkrs[i]["_id"].(primitive.ObjectID).Hex(),
-			Firstname: wrkrs[i]["firstname"].(string),
-			Lastname:  wrkrs[i]["lastname"].(string),
-			Position:  wrkrs[i]["position"].(string),
-		}
-
-		workers = append(workers, w)
-	}
-
-	item = &workers
+	item = &wrkrs
 
 	return
 }

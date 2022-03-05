@@ -3,11 +3,13 @@ package models
 import (
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type IdeaCreate struct {
 	Name        string
-	WorkerID    string
+	Worker      WorkerBsonModelInIdea
 	Date        time.Time
 	Genre       string
 	Mechanics   []string
@@ -72,9 +74,8 @@ type IdeaList struct {
 }
 
 type RateIdeaCritera struct {
-	IdeaID     string
-	CriteriaID string
-	Rate       int
+	IdeaID primitive.ObjectID
+	Rating RatingStructInIdea
 }
 
 //CRITERIA
@@ -85,7 +86,7 @@ type CriteriaSpecData struct {
 }
 
 type CriteriaUpdate struct {
-	ID   string
+	ID   primitive.ObjectID
 	Name string
 }
 
@@ -101,4 +102,17 @@ type GenreUpdate struct {
 type MechanicUpdate struct {
 	OldMech string
 	NewMech string
+}
+
+////////////////////////////////////////////////////////////////////////BSON///////////////////////////////////////////////////////////////
+
+type RatingStructInIdea struct {
+	CriteriaID    primitive.ObjectID `bson:"criteria_id"`
+	CrieteriaName string             `bson:"criteria_name"`
+	UserID        primitive.ObjectID `bson:"user_id"`
+	Rate          int                `bson:"rate"`
+}
+
+type ArrayOfRatesIdea struct {
+	Rates []RatingStructInIdea `bson:"rates"`
 }

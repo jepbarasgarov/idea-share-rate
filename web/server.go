@@ -63,7 +63,7 @@ func NewRouter(s *Server) *mux.Router {
 	//CRITERIA
 	r.HandleFunc("/api/v1/idea/criteria/create", s.HandleCriteriaCreate).Methods("POST")
 	r.HandleFunc("/api/v1/idea/criteria/update", s.HandleCriteriaUpdate).Methods("POST")
-	r.HandleFunc("/api/v1/idea/criteria/delete/{id}", s.HandleCriteriaDelete).Methods("POST")
+	// r.HandleFunc("/api/v1/idea/criteria/delete/{id}", s.HandleCriteriaDelete).Methods("POST")
 	r.HandleFunc("/api/v1/idea/criteria/list", s.HandleCriteriaList).Methods("POST")
 
 	//IDEA-ADDITIONALS
