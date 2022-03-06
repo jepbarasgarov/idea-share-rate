@@ -562,10 +562,37 @@ func (d *MgAccess) IdeaRate(
 		return
 	}
 
-	//TODO: total gaytarmagy gos
+	options := options.FindOne()
+	options.Projection = bson.M{"_id": 0, "rates": 1}
+
+	var s models.ArrayOfRatesIdea
+
+	_ = coll.FindOne(ctx, MatchStage, options).Decode(&s)
+	if err != nil {
+		eMsg := "Error in aggregation of CheckAllMechanicsArePresent"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var rateSum int
+	rateNum := len(s.Rates)
+	for i := 0; i < rateNum; i++ {
+		rateSum += s.Rates[i].Rate
+	}
 
 	var averageRate int
 	item = &averageRate
+
+	if rateNum != 0 {
+		point := float64(rateSum) / float64(rateNum)
+		under := point - float64(int(point))
+		upper := 1 - under
+		if under >= upper {
+			averageRate = int(point) + 1
+		} else {
+			averageRate = int(point)
+		}
+
+	}
 
 	return
 }
