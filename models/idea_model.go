@@ -31,26 +31,29 @@ type IdeaUpdate struct {
 }
 
 type IdeaFilter struct {
-	WorkerID  *string
+	UserID    primitive.ObjectID
+	WorkerID  *primitive.ObjectID
 	Name      *string
 	Genre     *string
 	Mechanics *[]string
-	BeginDate *time.Time
-	EndDate   *time.Time
+	BeginDate *string
+	EndDate   *string
 	Condition *responses.IdeaCondition
 	Limit     int
 	Offset    int
 }
 
 type IdeaLightData struct {
-	ID          string
-	Worker      WorkerLightData
-	Name        string
-	Date        time.Time
-	IsItNew     bool
-	Description string
-	FilePath    *string
-	OverallRate int
+	ID          string                `bson:"_id" json:"id"`
+	Worker      WorkerBsonModelInIdea `bson:"worker" json:"worker"`
+	Name        string                `bson:"name" json:"game_name"`
+	Date        time.Time             `bson:"date" json:"date"`
+	IsItNew     bool                  `bson:"is_it_new" json:"is_it_new"`
+	Description string                `bson:"description" json:"description"`
+	FilePath    string                `bson:"path" json:"file_path"`
+	OverallRate int                   `bson:"rate" json:"rate"`
+	AvgRate     *float64              `bson:"avg" json:"avg,omitempty"`
+	CreatesTS   time.Time             `bson:"create_ts"`
 }
 
 type IdeaSpecData struct {

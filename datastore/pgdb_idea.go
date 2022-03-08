@@ -5,7 +5,6 @@ import (
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -66,7 +65,7 @@ const (
 
 //IDEA
 
-func (d *PgAccess) IdeaList(
+func (d *MgAccess) IdeaList(
 	ctx context.Context,
 	cu *responses.ActionInfo,
 	Filter *models.IdeaFilter,
@@ -75,192 +74,142 @@ func (d *PgAccess) IdeaList(
 		"method": "PgAccess.IdeaList",
 	})
 
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
+	item = &models.IdeaList{}
+	item.Result = make([]models.IdeaLightData, 0)
 
-		item = &models.IdeaList{}
-		item.Result = make([]models.IdeaLightData, 0)
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
 
-		sqlGet := sqlGetIdeaList
-		sqlCount := sqlCountIdea
+	}
 
-		ParamsForGet := make([]interface{}, 0)
-		ParamsForGet = append(ParamsForGet, cu.ID)
-		ParamsForCount := make([]interface{}, 0)
-		ParamsForCount = append(ParamsForCount, 1)
+	x := bson.D{}
 
-		init := 2
-		if Filter.WorkerID != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.worker_id = $` + strOrder
-			sqlCount += ` AND worker_id = $` + strOrder
-			ParamsForGet = append(ParamsForGet, *Filter.WorkerID)
-			ParamsForCount = append(ParamsForCount, *Filter.WorkerID)
-			init++
+	if Filter.WorkerID != nil {
+		x = append(x, bson.E{"worker._id", *Filter.WorkerID})
+	}
+
+	if Filter.Name != nil {
+
+	}
+
+	if Filter.Genre != nil {
+		x = append(x, bson.E{"genre", *Filter.Genre})
+	}
+
+	// if Filter.BeginDate != nil {
+	// 	dateCompareBegin := bson.E{"date", bson.E{"$gt", *Filter.BeginDate}}
+	// 	x = append(x, dateCompareBegin)
+	// }
+
+	// if Filter.EndDate != nil {
+	// 	dateCompareEnd := bson.E{"date", bson.E{"$lte", *Filter.EndDate}}
+	// 	x = append(x, dateCompareEnd)
+
+	// }
+
+	// if Filter.Mechanics != nil {
+	// 	mechSearch := bson.E{"mechanics", bson.E{"$all", *Filter.Mechanics}}
+	// 	x = append(x, mechSearch)
+	// }
+
+	//TODO : begin, end we mechanic boyunca filter gos
+	matchStage := bson.D{{"$match", x}}
+	unWindStags := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
+	projectStage := bson.D{{"$project", bson.D{
+		{"_id", 1},
+		{"name", 1},
+		{"worker", 1},
+		{"date", 1},
+		{"description", 1},
+		{"create_ts", 1},
+		{"path", bson.M{"$arrayElemAt": bson.A{"$paths", 0}}},
+		{"is_it_new", bson.M{"$ne": bson.A{"$rates.user_id", Filter.UserID}}},
+		{"rate", "$rates.rate"},
+	}}}
+	groupStage := bson.D{{"$group", bson.D{
+		{"_id", "$_id"},
+		{"name", bson.M{"$first": "$name"}},
+		{"worker", bson.M{"$first": "$worker"}},
+		{"date", bson.M{"$first": "$date"}},
+		{"create_ts", bson.M{"$first": "$create_ts"}},
+		{"description", bson.M{"$first": "$description"}},
+		{"path", bson.M{"$first": "$path"}},
+		{"is_it_new", bson.M{"$min": "$is_it_new"}},
+		{"avg", bson.M{"$avg": "$rate"}},
+	}}}
+
+	var sortStage bson.D
+	sortStage = bson.D{{"$sort", bson.D{{"is_it_new", -1}, {"create_ts", 1}}}}
+
+	if Filter.Condition != nil {
+		if *Filter.Condition == responses.RatedIdea {
+			sortStage = bson.D{{"$sort", bson.M{"is_it_new": 1}}}
 		}
-		if Filter.Name != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.name ILIKE $` + strOrder
-			sqlCount += ` AND name ILIKE $` + strOrder
-			ParamsForGet = append(ParamsForGet, `%`+*Filter.Name+`%`)
-			ParamsForCount = append(ParamsForCount, `%`+*Filter.Name+`%`)
-			init++
-		}
+	}
 
-		if Filter.Genre != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.genre = $` + strOrder
-			sqlCount += ` AND genre = $` + strOrder
-			ParamsForGet = append(ParamsForGet, *Filter.Genre)
-			ParamsForCount = append(ParamsForCount, *Filter.Genre)
-			init++
-		}
+	limitStage := bson.D{{"$limit", Filter.Limit}}
+	offsetStage := bson.D{{"$skip", Filter.Offset}}
 
-		if Filter.BeginDate != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.date >= $` + strOrder
-			sqlCount += ` AND date >= $` + strOrder
-			ParamsForGet = append(ParamsForGet, *Filter.BeginDate)
-			ParamsForCount = append(ParamsForCount, *Filter.BeginDate)
-			init++
-		}
+	db := client.Database("idea-share")
+	coll := db.Collection("idea")
 
-		if Filter.EndDate != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.date <= $` + strOrder
-			sqlCount += ` AND date <= $` + strOrder
-			ParamsForGet = append(ParamsForGet, *Filter.EndDate)
-			ParamsForCount = append(ParamsForCount, *Filter.EndDate)
-			init++
-		}
+	cursorIdeaLits, err := coll.Aggregate(ctx, mongo.Pipeline{matchStage, unWindStags, projectStage, groupStage, sortStage, offsetStage, limitStage})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
 
-		if Filter.Mechanics != nil {
-			strOrder := strconv.Itoa(init)
-			sqlGet += ` AND idea.mechanics @> $` + strOrder
-			sqlCount += ` AND mechanics @> $` + strOrder
-			ParamsForGet = append(ParamsForGet, *Filter.Mechanics)
-			ParamsForCount = append(ParamsForCount, *Filter.Mechanics)
-			init++
-		}
-
-		var SortingWayByIdeaLabel string
-		SortingWayByIdeaLabel = "DESC"
-
-		if Filter.Condition != nil {
-			if *Filter.Condition == responses.RatedIdea {
-				SortingWayByIdeaLabel = "ASC"
-			}
-		}
-		strOrderLimit := strconv.Itoa(init)
-		strOrderOffset := strconv.Itoa(init + 1)
-
-		sqlGet += ` ORDER BY userrel.mark ` + SortingWayByIdeaLabel + `, idea.date DESC` + ` LIMIT $` + strOrderLimit + ` OFFSET $` + strOrderOffset
-		ParamsForGet = append(ParamsForGet, Filter.Limit, Filter.Offset)
-		if Filter.Offset == 0 {
-			row := conn.QueryRow(ctx, sqlCount, ParamsForCount...)
-			err = row.Scan(&item.Total)
-			if err != nil {
-				eMsg := "error in sqlCountIdea"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-		}
-
-		rows, err := conn.Query(ctx, sqlGet, ParamsForGet...)
-		if err != nil {
-			eMsg := "error in sqlGetIdeaList"
+	for cursorIdeaLits.Next(ctx) {
+		if err = cursorIdeaLits.All(ctx, &item.Result); err != nil {
+			eMsg := "Error in reading cursorIdeaLits"
 			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
 			return
 		}
-		for rows.Next() {
-			idea := models.IdeaLightData{}
-			var mark *string
-			err = rows.Scan(
-				&idea.ID,
-				&idea.Name,
-				&idea.Date,
-				&idea.Description,
-				&idea.Worker.ID,
-				&idea.Worker.Firstname,
-				&idea.Worker.Lastname,
-				&idea.Worker.Position,
-				&idea.FilePath,
-				&mark,
-			)
-			if err != nil {
-				eMsg := "error ocurred while scanning sqlGetIdeaList"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-			if mark != nil {
-				idea.IsItNew = false
-			} else {
-				idea.IsItNew = true
-			}
-
-			item.Result = append(item.Result, idea)
-		}
-
-		numOfIdeas := len(item.Result)
-		for i := 0; i < numOfIdeas; i++ {
-			if !item.Result[i].IsItNew {
-				row := conn.QueryRow(ctx, sqlGetOverAllRateIdea, item.Result[i].ID)
-				var rateNum, rateSum int
-				err = row.Scan(&rateNum, &rateSum)
-				if err != nil {
-					eMsg := "error in sqlGetOverAllRateIdea"
-					clog.WithError(err).Error(eMsg)
-					err = errors.Wrap(err, eMsg)
-					return
-				}
-
-				if rateNum != 0 {
-					point := float64(rateSum) / float64(rateNum)
-					under := point - float64(int(point))
-					upper := 1 - under
-					if under >= upper {
-						item.Result[i].OverallRate = int(point) + 1
-					} else {
-						item.Result[i].OverallRate = int(point)
-					}
-
-				}
-			}
-		}
-		if Filter.WorkerID != nil {
-			var lastSubmit *time.Time
-			lastSubmitRow := conn.QueryRow(ctx, sqlSelectLastIdeaSubmittedDateWorker, *Filter.WorkerID)
-			err = lastSubmitRow.Scan(&lastSubmit)
-			if err != nil && err != pgx.ErrNoRows {
-				eMsg := "error in sqlSelectLastIdeaSubmittedDateWorker"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-
-			if err == nil {
-				item.LastSubmitted = *lastSubmit
-			}
-
-			if err == pgx.ErrNoRows {
-				err = nil
-			}
-		}
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
 	}
+
+	for i := 0; i < len(item.Result); i++ {
+		if !item.Result[i].IsItNew {
+			under := *item.Result[i].AvgRate - float64(int(*item.Result[i].AvgRate))
+			upper := 1 - under
+			if under >= upper {
+				item.Result[i].OverallRate = int(*item.Result[i].AvgRate) + 1
+			} else {
+				item.Result[i].OverallRate = int(*item.Result[i].AvgRate)
+			}
+
+			item.Result[i].AvgRate = nil
+		}
+	}
+
+	groupStageCount := bson.D{{"$group", bson.D{
+		{"_id", ""},
+		{"total", bson.M{"$sum": 1}},
+	}}}
+
+	projectStageCount := bson.D{{"$project", bson.D{{"_id", 0}}}}
+
+	var total []bson.M
+
+	cursorIdeaCount, err := coll.Aggregate(ctx, mongo.Pipeline{matchStage, groupStageCount, projectStageCount})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	for cursorIdeaCount.Next(ctx) {
+		if err = cursorIdeaCount.All(ctx, &total); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	item.Total = int(total[0]["total"].(int32))
+
 	return
 }
 
@@ -519,6 +468,7 @@ func (d *MgAccess) IdeaCreate(
 		{Key: "description", Value: Idea.Description},
 		{Key: "paths", Value: Idea.Paths},
 		{Key: "rates", Value: rates},
+		{Key: "create_ts", Value: time.Now().UTC()},
 	})
 
 	return
@@ -838,6 +788,8 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 
 	groupStage := bson.D{{"$group", bson.D{{"_id", ""}, {"mechs", bson.D{{"$push", "$name"}}}}}}
 	matchStage := bson.D{{"$match", bson.D{{"mechs", bson.D{{"$all", mechList}}}}}}
+
+	fmt.Println(groupStage)
 
 	cursor, err := coll.Aggregate(ctx, mongo.Pipeline{groupStage, matchStage})
 	if err != nil {

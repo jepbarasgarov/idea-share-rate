@@ -56,25 +56,29 @@ func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var Filter models.IdeaFilter
+
+	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+
 	if len(r.FormValue("name")) != 0 {
 		name := r.FormValue("name")
 		Filter.Name = &name
 	}
 
-	_, err = uuid.FromString(r.FormValue("worker_id"))
-	woID := r.FormValue("worker_id")
+	woID, err := primitive.ObjectIDFromHex(r.FormValue("worker_id"))
 	if err == nil {
 		Filter.WorkerID = &woID
 	}
 
 	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
 	if err == nil && !dateStart.IsZero() {
-		Filter.BeginDate = &dateStart
+		d := r.FormValue("start")
+		Filter.BeginDate = &d
 	}
 
 	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
 	if err == nil && !dateEnd.IsZero() {
-		Filter.EndDate = &dateEnd
+		d := r.FormValue("end")
+		Filter.BeginDate = &d
 	}
 
 	if len(r.FormValue("genre")) != 0 {
@@ -98,7 +102,7 @@ func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 		Filter.Limit = 50
 	}
 
-	Filter.Offset, err = strconv.Atoi(r.FormValue("offset"))
+	Filter.Offset, err = strconv.Atoi(r.FormValue("skip"))
 	if err != nil {
 		Filter.Offset = 0
 	}
@@ -111,32 +115,8 @@ func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Resp := responses.IdeaList{}
-	Resp.Total = data.Total
-	Resp.LastSubmitted = data.LastSubmitted
-	Resp.Result = make([]responses.IdeaLightData, 0)
-
-	for _, idea := range data.Result {
-		respIdea := responses.IdeaLightData{
-			ID:   idea.ID,
-			Name: idea.Name,
-			Worker: responses.WorkerLightData{
-				ID:        idea.Worker.ID,
-				Firstname: idea.Worker.Firstname,
-				Lastname:  idea.Worker.Lastname,
-				Position:  idea.Worker.Position,
-			},
-			Date:        idea.Date,
-			Description: idea.Description,
-			IsItNew:     idea.IsItNew,
-			FilePath:    idea.FilePath,
-			OverallRate: idea.OverallRate,
-		}
-		Resp.Result = append(Resp.Result, respIdea)
-	}
-
 	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 
@@ -249,25 +229,28 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var Filter models.IdeaFilter
+	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+
 	if len(r.FormValue("name")) != 0 {
 		name := r.FormValue("name")
 		Filter.Name = &name
 	}
 
-	_, err = uuid.FromString(r.FormValue("worker_id"))
-	x := r.FormValue("worker_id")
+	woID, err := primitive.ObjectIDFromHex(r.FormValue("worker_id"))
 	if err == nil {
-		Filter.WorkerID = &x
+		Filter.WorkerID = &woID
 	}
 
 	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
 	if err == nil && !dateStart.IsZero() {
-		Filter.BeginDate = &dateStart
+		d := r.FormValue("start")
+		Filter.BeginDate = &d
 	}
 
 	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
 	if err == nil && !dateEnd.IsZero() {
-		Filter.EndDate = &dateEnd
+		d := r.FormValue("end")
+		Filter.BeginDate = &d
 	}
 
 	if len(r.FormValue("genre")) != 0 {
@@ -304,31 +287,31 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Resp := responses.IdeaList{}
-	Resp.Total = data.Total
-	Resp.LastSubmitted = data.LastSubmitted
-	Resp.Result = make([]responses.IdeaLightData, 0)
+	// Resp := responses.IdeaList{}
+	// Resp.Total = data.Total
+	// Resp.LastSubmitted = data.LastSubmitted
+	// Resp.Result = make([]responses.IdeaLightData, 0)
 
-	for _, idea := range data.Result {
-		respIdea := responses.IdeaLightData{
-			ID:   idea.ID,
-			Name: idea.Name,
-			Worker: responses.WorkerLightData{
-				ID:        idea.Worker.ID,
-				Firstname: idea.Worker.Firstname,
-				Lastname:  idea.Worker.Lastname,
-				Position:  idea.Worker.Position,
-			},
-			Date:        idea.Date,
-			Description: idea.Description,
-			IsItNew:     idea.IsItNew,
-			FilePath:    idea.FilePath,
-			OverallRate: idea.OverallRate,
-		}
-		Resp.Result = append(Resp.Result, respIdea)
-	}
+	// for _, idea := range data.Result {
+	// 	respIdea := responses.IdeaLightData{
+	// 		ID:   idea.ID,
+	// 		Name: idea.Name,
+	// 		Worker: responses.WorkerLightData{
+	// 			ID:        idea.Worker.ID,
+	// 			Firstname: idea.Worker.Firstname,
+	// 			Lastname:  idea.Worker.Lastname,
+	// 			Position:  idea.Worker.Position,
+	// 		},
+	// 		Date:        idea.Date,
+	// 		Description: idea.Description,
+	// 		IsItNew:     idea.IsItNew,
+	// 		FilePath:    idea.FilePath,
+	// 		OverallRate: idea.OverallRate,
+	// 	}
+	// 	Resp.Result = append(Resp.Result, respIdea)
+	// }
 
-	renderInfo, err := json.Marshal(Resp.Result)
+	renderInfo, err := json.Marshal(data.Result)
 	if err != nil {
 		eMsg := "error in marshalling render info"
 		clog.WithError(err).Error(eMsg)
