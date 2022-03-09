@@ -7,7 +7,6 @@ import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,57 +16,6 @@ import (
 )
 
 //CRITERIA
-
-// func (api *APIController) CriteriaDelete(
-// 	ctx context.Context,
-// 	ID string,
-// 	cu *responses.ActionInfo,
-// ) (err error) {
-
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"method":   "api.CriteriaDelete",
-// 		"username": cu.Username,
-// 	})
-
-// 	cirteriaGotByID, err := api.access.CriteriaGetByID(ctx, ID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.CriteriaGetByID"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-// 	if cirteriaGotByID == nil {
-// 		eMsg := "Criteria not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
-// 		return
-// 	}
-
-// 	numOfRates, err := api.access.CountCriteriaRates(ctx, ID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.CountCriteriaRates"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if numOfRates > 0 {
-// 		eMsg := "Criteria has some rates"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorForbidden(errs.ERR_CRITERIA_HAS_RATES)
-// 		return
-// 	}
-
-// 	err = api.access.CriteriaDelete(ctx, nil, ID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.CriteriaDelete"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	return
-// }
 
 //////////////////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////
 
@@ -145,7 +93,6 @@ func (api *APIController) IdeaCreate(
 	}
 
 	if !mechanicsValid {
-		fmt.Println(Idea.Mechanics)
 		eMsg := "Mechanics not found"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
@@ -382,6 +329,8 @@ func (api *APIController) IdeaUpdate(
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
 		return
 	}
+
+	newIdea.Worker = *worker
 
 	genres, err := api.access.GenreList(ctx)
 	if err != nil {
@@ -826,5 +775,56 @@ func (api *APIController) CriteriaList(
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
+	return
+}
+
+func (api *APIController) CriteriaDelete(
+	ctx context.Context,
+	ID primitive.ObjectID,
+	cu *responses.ActionInfo,
+) (err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.CriteriaDelete",
+		"username": cu.Username,
+	})
+
+	cirteriaGotByID, err := api.access.CriteriaGetByID(ctx, ID)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaGetByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	if cirteriaGotByID == nil {
+		eMsg := "Criteria not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+		return
+	}
+
+	numOfRates, err := api.access.CountCriteriaRates(ctx, ID)
+	if err != nil {
+		eMsg := "error in api.access.CountCriteriaRates"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if numOfRates > 0 {
+		eMsg := "Criteria has some rates"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_CRITERIA_HAS_RATES)
+		return
+	}
+
+	err = api.access.CriteriaDelete(ctx, nil, ID)
+	if err != nil {
+		eMsg := "error in api.access.CriteriaDelete"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
 	return
 }

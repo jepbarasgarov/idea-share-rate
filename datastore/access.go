@@ -203,13 +203,13 @@ type Access interface {
 
 	CountCriteriaRates(
 		ctx context.Context,
-		ID string,
+		ID primitive.ObjectID,
 	) (item int, err error)
 
 	CriteriaDelete(
 		ctx context.Context,
 		pTx pgx.Tx,
-		ID string,
+		ID primitive.ObjectID,
 	) (err error)
 
 	CriteriaList(

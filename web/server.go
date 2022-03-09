@@ -50,7 +50,7 @@ func NewRouter(s *Server) *mux.Router {
 	r.HandleFunc("/api/v1/worker/get/{id}", s.HandleWorkerGetByID).Methods("POST")
 
 	//IDEA
-	r.HandleFunc("/api/v1/idea/create", s.HandleIdeaCreate).Methods("POST") // TODO : su api-da genre we mechanics gelende dine ozundakileri kabul et. upsert edyan yerini ayyr
+	r.HandleFunc("/api/v1/idea/create", s.HandleIdeaCreate).Methods("POST")
 	r.HandleFunc("/api/v1/idea/get/{id}", s.HandleIdeaGet).Methods("POST")
 	r.HandleFunc("/api/v1/idea/delete/{id}", s.HandleIdeaDelete).Methods("POST")
 	r.HandleFunc("/api/v1/idea/update/{id}", s.HandleIdeaUpdate).Methods("POST")
@@ -63,7 +63,7 @@ func NewRouter(s *Server) *mux.Router {
 	//CRITERIA
 	r.HandleFunc("/api/v1/idea/criteria/create", s.HandleCriteriaCreate).Methods("POST")
 	r.HandleFunc("/api/v1/idea/criteria/update", s.HandleCriteriaUpdate).Methods("POST")
-	// r.HandleFunc("/api/v1/idea/criteria/delete/{id}", s.HandleCriteriaDelete).Methods("POST")
+	r.HandleFunc("/api/v1/idea/criteria/delete/{id}", s.HandleCriteriaDelete).Methods("POST")
 	r.HandleFunc("/api/v1/idea/criteria/list", s.HandleCriteriaList).Methods("POST")
 
 	//IDEA-ADDITIONALS

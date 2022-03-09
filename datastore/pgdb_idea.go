@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -62,74 +61,6 @@ const (
 	sqlDeleteCriteria     = `DELETE FROM tbl_criteria WHERE id = $1`
 	sqlSelectcriteriaList = `SELECT id, name FROM tbl_criteria`
 )
-
-// CRITERIA
-
-func (d *PgAccess) CountCriteriaRates(
-	ctx context.Context,
-	ID string,
-) (item int, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CountCriteriaRates",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		var total int
-		row := conn.QueryRow(ctx, sqlCountCriteriaRates, ID)
-		err = row.Scan(&total)
-		if err != nil {
-			eMsg := "error in sqlCountCriteriaRates"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = total
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
-func (d *PgAccess) CriteriaDelete(
-	ctx context.Context,
-	pTx pgx.Tx,
-	ID string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CriteriaDelete",
-	})
-
-	err = d.runInTx(ctx, pTx, clog, func(tx pgx.Tx) (rollback bool, err error) {
-
-		rollback = true
-
-		_, err = tx.Exec(
-			ctx,
-			sqlDeleteCriteria,
-			ID,
-		)
-		if err != nil {
-			eMsg := "An error occurred on sqlDeleteCriteria"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return false, nil
-	})
-
-	if err != nil {
-		eMsg := "An error occurred on d.runInTx()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
 
@@ -877,8 +808,6 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 	groupStage := bson.D{{"$group", bson.D{{"_id", ""}, {"mechs", bson.D{{"$push", "$name"}}}}}}
 	matchStage := bson.D{{"$match", bson.D{{"mechs", bson.D{{"$all", mechList}}}}}}
 
-	fmt.Println(groupStage)
-
 	cursor, err := coll.Aggregate(ctx, mongo.Pipeline{groupStage, matchStage})
 	if err != nil {
 		eMsg := "Error in aggregation of CheckAllMechanicsArePresent"
@@ -1153,5 +1082,86 @@ func (d *MgAccess) CriteriaList(
 	}
 
 	item = &criterias
+	return
+}
+
+func (d *MgAccess) CriteriaDelete(
+	ctx context.Context,
+	pTx pgx.Tx,
+	ID primitive.ObjectID,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CriteriaDelete",
+	})
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("criteria")
+
+	_, err = coll.DeleteOne(ctx, bson.M{"_id": ID})
+	if err != nil {
+		eMsg := "error in delete criteria"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	return
+}
+
+func (d *MgAccess) CountCriteriaRates(
+	ctx context.Context,
+	ID primitive.ObjectID,
+) (item int, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CountCriteriaRates",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	//TODO : su functiony goni idelan nacesinde bar dp sanap optimise etjek bol
+
+	db := client.Database("idea-share")
+	collIdea := db.Collection("idea")
+
+	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", false}}}}
+	projectStageLIst := bson.D{{"$project", bson.D{
+		{"_id", 0},
+		{"rates.criteria_id", 1},
+	}}}
+	groupStageList := bson.D{{"$group", bson.D{
+		{"_id", "$rates.criteria_id"},
+		{"count", bson.M{"$sum": 1}},
+	}}}
+	matchStageList := bson.D{{"$match", bson.M{"_id": ID}}}
+
+	cursorCountCriteria, err := collIdea.Aggregate(ctx, mongo.Pipeline{projectStageLIst, unWindStagsList, groupStageList, matchStageList})
+	if err != nil {
+		eMsg := "Error in cursorCountCriteria"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var res []bson.M
+	for cursorCountCriteria.Next(ctx) {
+		if err = cursorCountCriteria.All(ctx, &res); err != nil {
+			eMsg := "Error in reading cursorCountCriteria"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	if len(res) > 0 {
+		item = int(res[0]["count"].(int32))
+	}
+
 	return
 }
