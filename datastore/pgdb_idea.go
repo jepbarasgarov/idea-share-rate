@@ -91,6 +91,7 @@ func (d *MgAccess) IdeaList(
 	}
 
 	if Filter.Name != nil {
+		x = append(x, bson.E{"name", bson.D{{"$regex", *Filter.Name}, {"$options", "i"}}})
 
 	}
 
@@ -113,8 +114,6 @@ func (d *MgAccess) IdeaList(
 		mechSearch := bson.E{"mechanics", bson.M{"$all": *Filter.Mechanics}}
 		x = append(x, mechSearch)
 	}
-
-	//TODO : name boyunca ilike etdir
 
 	matchStageList := bson.D{{"$match", x}}
 	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
