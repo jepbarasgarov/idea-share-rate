@@ -18,108 +18,6 @@ import (
 
 //IDEA
 
-// func (api *APIController) IdeaUpdate(
-// 	ctx context.Context,
-// 	cu *responses.ActionInfo,
-// 	newIdea *models.IdeaUpdate,
-// ) (item *models.IdeaSpecData, err error) {
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"method": "api.IdeaUpdate",
-// 	})
-
-// 	oldIdea, err := api.access.GetIdeaByID(ctx, cu, newIdea.ID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.GetIdeaByID"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if oldIdea == nil {
-// 		eMsg := "Idea not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-// 		return
-// 	}
-
-// 	worker, err := api.access.Workerget(ctx, newIdea.WorkerID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.Workerget"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if worker == nil {
-// 		eMsg := "worker not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
-// 		return
-// 	}
-
-// 	genres, err := api.access.GenreList(ctx)
-// 	if err != nil {
-// 		eMsg := "error in api.access.GenreList"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	genreNum := len(*genres)
-// 	var genreValid bool = false
-// 	for i := 0; i < genreNum; i++ {
-// 		if (*genres)[i] == newIdea.Genre {
-// 			genreValid = true
-// 			break
-// 		}
-// 	}
-
-// 	if !genreValid {
-// 		eMsg := "Genre not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
-// 		return
-// 	}
-
-// 	mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, newIdea.Mechanics)
-// 	if err != nil {
-// 		eMsg := "error in api.access.CheckAllMechanicsArePresent"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if !mechanicsValid {
-// 		eMsg := "Mechanics not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
-// 		return
-// 	}
-
-// 	err = api.access.IdeaUpdate(ctx, nil, newIdea)
-// 	if err != nil {
-// 		eMsg := "error in api.access.IdeaUpdate"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	item = &models.IdeaSpecData{
-// 		ID:            newIdea.ID,
-// 		Name:          newIdea.Name,
-// 		Genre:         newIdea.Genre,
-// 		Description:   newIdea.Description,
-// 		Date:          newIdea.Date,
-// 		Mechanics:     newIdea.Mechanics,
-// 		Links:         newIdea.Links,
-// 		Worker:        *worker,
-// 		FilePaths:     oldIdea.FilePaths,
-// 		CriteriaRates: oldIdea.CriteriaRates,
-// 		OverallRate:   oldIdea.OverallRate,
-// 	}
-// 	return
-// }
-
 //GENRE
 
 func (api *APIController) GenreUpdate(
@@ -567,6 +465,108 @@ func (api *APIController) IdeaDelete(
 		return
 	}
 
+	return
+}
+
+func (api *APIController) IdeaUpdate(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	newIdea *models.IdeaUpdate,
+) (item *models.IdeaSpecData, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaUpdate",
+	})
+
+	oldIdea, err := api.access.IdeaGet(ctx, cu, newIdea.ID)
+	if err != nil {
+		eMsg := "error in api.access.GetIdeaByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if oldIdea == nil {
+		eMsg := "Idea not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+		return
+	}
+
+	worker, err := api.access.Workerget(ctx, newIdea.Worker.ID)
+	if err != nil {
+		eMsg := "error in api.access.Workerget"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if worker == nil {
+		eMsg := "worker not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
+		return
+	}
+
+	genres, err := api.access.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	genreNum := len(*genres)
+	var genreValid bool = false
+	for i := 0; i < genreNum; i++ {
+		if (*genres)[i] == newIdea.Genre {
+			genreValid = true
+			break
+		}
+	}
+
+	if !genreValid {
+		eMsg := "Genre not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
+		return
+	}
+
+	mechanicsValid, err := api.access.CheckAllMechanicsArePresent(ctx, newIdea.Mechanics)
+	if err != nil {
+		eMsg := "error in api.access.CheckAllMechanicsArePresent"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if !mechanicsValid {
+		eMsg := "Mechanics not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+		return
+	}
+
+	err = api.access.IdeaUpdate(ctx, nil, newIdea)
+	if err != nil {
+		eMsg := "error in api.access.IdeaUpdate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	item = &models.IdeaSpecData{
+		ID:            newIdea.ID,
+		Name:          newIdea.Name,
+		Genre:         newIdea.Genre,
+		Description:   newIdea.Description,
+		Date:          newIdea.Date,
+		Mechanics:     newIdea.Mechanics,
+		Links:         newIdea.Links,
+		Worker:        *worker,
+		FilePaths:     oldIdea.FilePaths,
+		CriteriaRates: oldIdea.CriteriaRates,
+		OverallRate:   oldIdea.OverallRate,
+	}
 	return
 }
 

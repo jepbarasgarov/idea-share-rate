@@ -20,9 +20,9 @@ type IdeaCreate struct {
 }
 
 type IdeaUpdate struct {
-	ID          string
+	ID          primitive.ObjectID
 	Name        string
-	WorkerID    string
+	Worker      WorkerBsonModelInIdea
 	Date        time.Time
 	Genre       string
 	Mechanics   []string
@@ -44,7 +44,7 @@ type IdeaFilter struct {
 }
 
 type IdeaLightData struct {
-	ID          string                `bson:"_id" json:"id"`
+	ID          primitive.ObjectID    `bson:"_id" json:"id"`
 	Worker      WorkerBsonModelInIdea `bson:"worker" json:"worker"`
 	Name        string                `bson:"name" json:"game_name"`
 	Date        time.Time             `bson:"date" json:"date"`
@@ -57,7 +57,7 @@ type IdeaLightData struct {
 }
 
 type IdeaSpecData struct {
-	ID            string                   `bson:"_id" json:"id"`
+	ID            primitive.ObjectID       `bson:"_id" json:"id"`
 	Worker        WorkerBsonModelInIdea    `bson:"worker" json:"worker"`
 	Name          string                   `bson:"name" json:"name"`
 	Date          time.Time                `bson:"date" json:"date"`

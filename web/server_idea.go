@@ -14,172 +14,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-//IDEA
-
-func (s *Server) HandleIdeaUpdate(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleIdeaUpdate"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-
-	_, err = s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	var IdeaUpdate models.IdeaUpdate
-
-	_, err = uuid.FromString(mux.Vars(r)["id"])
-	if err != nil {
-		emsg := "IdeaID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	IdeaUpdate.ID = mux.Vars(r)["id"]
-
-	if len(r.FormValue("name")) == 0 || len(r.FormValue("name")) > 256 {
-		emsg := "Idea name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	IdeaUpdate.Name = r.FormValue("name")
-
-	_, err = uuid.FromString(r.FormValue("worker_id"))
-	if err != nil {
-		emsg := "Worker ID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	IdeaUpdate.WorkerID = r.FormValue("worker_id")
-
-	IdeaUpdate.Date, err = helpers.ChangeStringToDate(r.FormValue("date"))
-	if err != nil || IdeaUpdate.Date.IsZero() {
-		eMsg := "There is no such date"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	if len(r.FormValue("genre")) == 0 || len(r.FormValue("genre")) > 256 {
-		emsg := "Idea genre name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	IdeaUpdate.Genre = r.FormValue("genre")
-
-	mechanics := make([]string, 0)
-	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
-	if err != nil {
-		eMsg := "Mechanics must be string"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	sort.Strings(mechanics)
-	mechs := len(mechanics)
-	if mechs > 0 {
-		if len(mechanics[0]) < 256 && len(mechanics[0]) > 0 {
-			IdeaUpdate.Mechanics = append(IdeaUpdate.Mechanics, mechanics[0])
-		}
-		if mechs > 1 {
-			for i := 1; i < mechs; i++ {
-				if mechanics[i] != mechanics[i-1] {
-					if len(mechanics[i]) < 256 && len(mechanics[i]) > 0 {
-						IdeaUpdate.Mechanics = append(IdeaUpdate.Mechanics, mechanics[i])
-					}
-				}
-			}
-		}
-	}
-
-	if len(IdeaUpdate.Mechanics) == 0 {
-		eMsg := "There must be related mechanics"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	IdeaUpdate.Description = r.FormValue("description")
-
-	err = json.Unmarshal([]byte(r.FormValue("links")), &IdeaUpdate.Links)
-	if err != nil {
-		eMsg := "Links must contain label and url"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	// data, err := s.c.IdeaUpdate(ctx, cu, &IdeaUpdate)
-	// if err != nil {
-	// 	eMsg := "error in s.c.IdeaUpdate"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	errs.SendResponse(w, err, nil, clog, requestLang)
-	// 	return
-	// }
-
-	// Resp := responses.IdeaSpecData{
-	// 	ID:          data.ID,
-	// 	Name:        data.Name,
-	// 	Genre:       data.Genre,
-	// 	Description: data.Description,
-	// 	Worker: responses.WorkerLightData{
-	// 		ID:        data.Worker.ID,
-	// 		Firstname: data.Worker.Firstname,
-	// 		Lastname:  data.Worker.Lastname,
-	// 		Position:  data.Worker.Position,
-	// 	},
-	// 	Date:          data.Date,
-	// 	Mechanics:     data.Mechanics,
-	// 	Links:         data.Links,
-	// 	FilePaths:     data.FilePaths,
-	// 	CriteriaRates: data.CriteriaRates,
-	// 	OverallRate:   data.OverallRate,
-	// }
-
-	// err = responses.ErrOK
-	// errs.SendResponse(w, err, Resp, clog, requestLang)
-	// clog.Info(handleName + " success")
-}
 
 //GENRE
 
@@ -1023,6 +861,142 @@ func (s *Server) HandleIdeaDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, nil, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleIdeaUpdate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleIdeaUpdate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var IdeaUpdate models.IdeaUpdate
+
+	IdeaUpdate.ID, err = primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		emsg := "IdeaID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	if len(r.FormValue("name")) == 0 || len(r.FormValue("name")) > 256 {
+		emsg := "Idea name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	IdeaUpdate.Name = r.FormValue("name")
+
+	IdeaUpdate.Worker.ID, err = primitive.ObjectIDFromHex(r.FormValue("worker_id"))
+	if err != nil {
+		emsg := "Worker ID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	IdeaUpdate.Date, err = helpers.ChangeStringToDate(r.FormValue("date"))
+	if err != nil || IdeaUpdate.Date.IsZero() {
+		eMsg := "There is no such date"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	if len(r.FormValue("genre")) == 0 || len(r.FormValue("genre")) > 256 {
+		emsg := "Idea genre name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	IdeaUpdate.Genre = r.FormValue("genre")
+
+	mechanics := make([]string, 0)
+	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
+	if err != nil {
+		eMsg := "Mechanics must be string"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	sort.Strings(mechanics)
+	mechs := len(mechanics)
+	if mechs > 0 {
+		if len(mechanics[0]) < 256 && len(mechanics[0]) > 0 {
+			IdeaUpdate.Mechanics = append(IdeaUpdate.Mechanics, mechanics[0])
+		}
+		if mechs > 1 {
+			for i := 1; i < mechs; i++ {
+				if mechanics[i] != mechanics[i-1] {
+					if len(mechanics[i]) < 256 && len(mechanics[i]) > 0 {
+						IdeaUpdate.Mechanics = append(IdeaUpdate.Mechanics, mechanics[i])
+					}
+				}
+			}
+		}
+	}
+
+	if len(IdeaUpdate.Mechanics) == 0 {
+		eMsg := "There must be related mechanics"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	IdeaUpdate.Description = r.FormValue("description")
+
+	err = json.Unmarshal([]byte(r.FormValue("links")), &IdeaUpdate.Links)
+	if err != nil {
+		eMsg := "Links must contain label and url"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.IdeaUpdate(ctx, cu, &IdeaUpdate)
+	if err != nil {
+		eMsg := "error in s.c.IdeaUpdate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 

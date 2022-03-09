@@ -63,63 +63,6 @@ const (
 	sqlSelectcriteriaList = `SELECT id, name FROM tbl_criteria`
 )
 
-//IDEA
-
-func (d *PgAccess) IdeaUpdate(
-	ctx context.Context,
-	pTx pgx.Tx,
-	NewIdea *models.IdeaUpdate,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.IdeaUpdate",
-	})
-	err = d.runInTx(ctx, pTx, clog, func(tx pgx.Tx) (rollback bool, err error) {
-		rollback = true
-		_, err = tx.Exec(ctx,
-			sqlUpdateIdea,
-			NewIdea.Name,
-			NewIdea.WorkerID,
-			NewIdea.Date,
-			NewIdea.Genre,
-			NewIdea.Mechanics,
-			NewIdea.Description,
-			NewIdea.ID,
-		)
-		if err != nil {
-			eMsg := "error in sqlUpdateIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		_, err = tx.Exec(ctx, sqlDeleteIdeaLinks, NewIdea.ID)
-		if err != nil {
-			eMsg := "error in sqlDeleteIdeaLinks"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		linkNumber := len(NewIdea.Links)
-		for i := 0; i < linkNumber; i++ {
-			_, err = tx.Exec(ctx, sqlCreateLinkIdea, NewIdea.Links[i].Label, NewIdea.Links[i].URL, NewIdea.ID)
-			if err != nil {
-				eMsg := "error in sqlCreateLinkIdea"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-		}
-
-		return false, nil
-	})
-	if err != nil {
-		eMsg := "error in d.runInTX()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 // GENRE
 
 func (d *PgAccess) GenreUpdate(
@@ -294,6 +237,7 @@ func (d *MgAccess) IdeaCreate(
 		{Key: "files", Value: Idea.AllFiles},
 		{Key: "rates", Value: rates},
 		{Key: "create_ts", Value: time.Now().UTC()},
+		{Key: "update_ts", Value: time.Now().UTC()},
 	})
 
 	return
@@ -676,6 +620,47 @@ func (d *MgAccess) IdeaDelete(
 	if err != nil {
 		eMsg := "Error in Idea delete"
 		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	return
+}
+
+func (d *MgAccess) IdeaUpdate(
+	ctx context.Context,
+	pTx pgx.Tx,
+	NewIdea *models.IdeaUpdate,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IdeaUpdate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
+
+	db := client.Database("idea-share")
+	collIdea := db.Collection("idea")
+
+	filter := bson.M{"_id": NewIdea.ID}
+	update := bson.M{"$set": bson.M{
+		"name":        NewIdea.Name,
+		"date":        NewIdea.Date,
+		"worker":      NewIdea.Worker,
+		"description": NewIdea.Description,
+		"genre":       NewIdea.Genre,
+		"mechanics":   NewIdea.Mechanics,
+		"links":       NewIdea.Links,
+		"update_ts":   time.Now().UTC(),
+	}}
+
+	_, err = collIdea.UpdateOne(ctx, filter, update)
+	if err != nil {
+		eMsg := "error in Updating idea"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
 		return
 	}
 
