@@ -22,179 +22,6 @@ import (
 
 //IDEA
 
-func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleIdeaList"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-		responses.UserRoleUser,
-	}
-
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	var Filter models.IdeaFilter
-
-	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
-
-	if len(r.FormValue("name")) != 0 {
-		name := r.FormValue("name")
-		Filter.Name = &name
-	}
-
-	woID, err := primitive.ObjectIDFromHex(r.FormValue("worker_id"))
-	if err == nil {
-		Filter.WorkerID = &woID
-	}
-
-	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
-	if err == nil && !dateStart.IsZero() {
-		begin := primitive.NewDateTimeFromTime(dateStart)
-		Filter.BeginDate = &begin
-	}
-
-	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
-	if err == nil && !dateEnd.IsZero() {
-		end := primitive.NewDateTimeFromTime(dateEnd)
-		Filter.EndDate = &end
-	}
-
-	if len(r.FormValue("genre")) != 0 {
-		genre := r.FormValue("genre")
-		Filter.Genre = &genre
-	}
-
-	mechanics := make([]string, 0)
-	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
-	if err == nil {
-		Filter.Mechanics = &mechanics
-	}
-
-	condition, err := helpers.ConvertStringToIdeaCondition(r.FormValue("condition"))
-	if err == nil {
-		Filter.Condition = &condition
-	}
-
-	Filter.Limit, err = strconv.Atoi(r.FormValue("limit"))
-	if err != nil {
-		Filter.Limit = 50
-	}
-
-	Filter.Offset, err = strconv.Atoi(r.FormValue("skip"))
-	if err != nil {
-		Filter.Offset = 0
-	}
-
-	data, err := s.c.IdeaList(ctx, &Filter, cu)
-	if err != nil {
-		eMsg := "error in s.c.IdeaList"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, data, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
-func (s *Server) HandleIdeaGet(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleIdeaGet"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-		responses.UserRoleUser,
-	}
-
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	x := mux.Vars(r)["id"]
-	id, err := uuid.FromString(x)
-	if err != nil {
-		emsg := "IdeaID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.IdeaGet(ctx, id.String(), cu)
-	if err != nil {
-		eMsg := "error in s.c.IdeaGet"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Resp := responses.IdeaSpecData{
-		ID:          data.ID,
-		Name:        data.Name,
-		Genre:       data.Genre,
-		Description: data.Description,
-		Worker: responses.WorkerLightData{
-			ID:        data.Worker.ID,
-			Firstname: data.Worker.Firstname,
-			Lastname:  data.Worker.Lastname,
-			Position:  data.Worker.Position,
-		},
-		Date:          data.Date,
-		Mechanics:     data.Mechanics,
-		Links:         data.Links,
-		FilePaths:     data.FilePaths,
-		CriteriaRates: data.CriteriaRates,
-		OverallRate:   data.OverallRate,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleIdeaListGetPdf"
 
@@ -344,108 +171,108 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
-func (s *Server) HandleIdeaGetPdf(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleIdeaGetPdf"
+// func (s *Server) HandleIdeaGetPdf(w http.ResponseWriter, r *http.Request) {
+// 	handleName := "HandleIdeaGetPdf"
 
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
+// 	ctx := r.Context()
+// 	ipAddress, err := helpers.GetIP(r)
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"remote-addr": ipAddress,
+// 		"uri":         r.RequestURI,
+// 	})
 
-	requestLang := helpers.GetRequestLang(r)
+// 	requestLang := helpers.GetRequestLang(r)
 
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	if err != nil {
+// 		eMsg := "couldn't get ip address"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-		responses.UserRoleUser,
-	}
+// 	roles := []responses.UserRole{
+// 		responses.UserRoleAdmin,
+// 		responses.UserRoleUser,
+// 	}
 
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	cu, err := s.UserRequirments(ctx, w, r, roles)
+// 	if err != nil {
+// 		eMsg := "UserRequirments error in " + handleName
+// 		clog.WithError(err).Error(eMsg)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	x := mux.Vars(r)["id"]
-	id, err := uuid.FromString(x)
-	if err != nil {
-		emsg := "IdeaID is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	x := mux.Vars(r)["id"]
+// 	id, err := uuid.FromString(x)
+// 	if err != nil {
+// 		emsg := "IdeaID is not compatible"
+// 		clog.WithError(err).Error(emsg)
+// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	data, err := s.c.IdeaGet(ctx, id.String(), cu)
-	if err != nil {
-		eMsg := "error in s.c.IdeaGet"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	data, err := s.c.IdeaGet(ctx, id.String(), cu)
+// 	if err != nil {
+// 		eMsg := "error in s.c.IdeaGet"
+// 		clog.WithError(err).Error(eMsg)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	Resp := responses.IdeaSpecData{
-		ID:          data.ID,
-		Name:        data.Name,
-		Genre:       data.Genre,
-		Description: data.Description,
-		Worker: responses.WorkerLightData{
-			ID:        data.Worker.ID,
-			Firstname: data.Worker.Firstname,
-			Lastname:  data.Worker.Lastname,
-			Position:  data.Worker.Position,
-		},
-		Date:          data.Date,
-		Mechanics:     data.Mechanics,
-		Links:         data.Links,
-		FilePaths:     data.FilePaths,
-		CriteriaRates: data.CriteriaRates,
-		OverallRate:   data.OverallRate,
-	}
+// 	Resp := responses.IdeaSpecData{
+// 		ID:          data.ID,
+// 		Name:        data.Name,
+// 		Genre:       data.Genre,
+// 		Description: data.Description,
+// 		Worker: responses.WorkerLightData{
+// 			ID:        data.Worker.ID,
+// 			Firstname: data.Worker.Firstname,
+// 			Lastname:  data.Worker.Lastname,
+// 			Position:  data.Worker.Position,
+// 		},
+// 		Date:          data.Date,
+// 		Mechanics:     data.Mechanics,
+// 		Links:         data.Links,
+// 		FilePaths:     data.FilePaths,
+// 		CriteriaRates: data.CriteriaRates,
+// 		OverallRate:   data.OverallRate,
+// 	}
 
-	renderInfo, err := json.Marshal(Resp)
-	if err != nil {
-		eMsg := "error in marshalling render info"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	renderInfo, err := json.Marshal(Resp)
+// 	if err != nil {
+// 		eMsg := "error in marshalling render info"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	response, err := http.Post(fmt.Sprintf("%s/render-item", config.Conf.Renderer), "application/json", bytes.NewBuffer(renderInfo))
-	if err != nil {
-		eMsg := "error in renderer post"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	response, err := http.Post(fmt.Sprintf("%s/render-item", config.Conf.Renderer), "application/json", bytes.NewBuffer(renderInfo))
+// 	if err != nil {
+// 		eMsg := "error in renderer post"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	content, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		eMsg := "error in renderer post"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
+// 	content, err := ioutil.ReadAll(response.Body)
+// 	if err != nil {
+// 		eMsg := "error in renderer post"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
+// 		return
+// 	}
 
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Content-Type", "application/pdf")
-	w.WriteHeader(http.StatusOK)
-	w.Write(content)
-}
+// 	w.Header().Set("Cache-Control", "no-store")
+// 	w.Header().Set("Content-Type", "application/pdf")
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write(content)
+// }
 
 func (s *Server) HandleIdeaDelete(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleIdeaDelete"
@@ -826,6 +653,7 @@ func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
 
 // 	ID, err := uuid.FromString(mux.Vars(r)["id"])
 // 	if err != nil {
+
 // 		eMsg := "criteria ID is not compatible"
 // 		clog.Error(eMsg)
 // 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
@@ -1087,6 +915,159 @@ func (s *Server) HandleRateIdea(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, Resp, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleIdeaList"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+		responses.UserRoleUser,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var Filter models.IdeaFilter
+
+	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+
+	if len(r.FormValue("name")) != 0 {
+		name := r.FormValue("name")
+		Filter.Name = &name
+	}
+
+	woID, err := primitive.ObjectIDFromHex(r.FormValue("worker_id"))
+	if err == nil {
+		Filter.WorkerID = &woID
+	}
+
+	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
+	if err == nil && !dateStart.IsZero() {
+		begin := primitive.NewDateTimeFromTime(dateStart)
+		Filter.BeginDate = &begin
+	}
+
+	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
+	if err == nil && !dateEnd.IsZero() {
+		end := primitive.NewDateTimeFromTime(dateEnd)
+		Filter.EndDate = &end
+	}
+
+	if len(r.FormValue("genre")) != 0 {
+		genre := r.FormValue("genre")
+		Filter.Genre = &genre
+	}
+
+	mechanics := make([]string, 0)
+	err = json.Unmarshal([]byte(r.FormValue("mechanics")), &mechanics)
+	if err == nil {
+		Filter.Mechanics = &mechanics
+	}
+
+	condition, err := helpers.ConvertStringToIdeaCondition(r.FormValue("condition"))
+	if err == nil {
+		Filter.Condition = &condition
+	}
+
+	Filter.Limit, err = strconv.Atoi(r.FormValue("limit"))
+	if err != nil {
+		Filter.Limit = 50
+	}
+
+	Filter.Offset, err = strconv.Atoi(r.FormValue("skip"))
+	if err != nil {
+		Filter.Offset = 0
+	}
+
+	data, err := s.c.IdeaList(ctx, &Filter, cu)
+	if err != nil {
+		eMsg := "error in s.c.IdeaList"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleIdeaGet(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleIdeaGet"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+		responses.UserRoleUser,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		emsg := "IdeaID is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.IdeaGet(ctx, id, cu)
+	if err != nil {
+		eMsg := "error in s.c.IdeaGet"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 
@@ -1487,7 +1468,7 @@ func (s *Server) HandleCriteriaUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Resp := responses.CriteriaSpecData{
-		ID:   criteria.ID.Hex(),
+		ID:   criteria.ID,
 		Name: criteria.Name,
 	}
 

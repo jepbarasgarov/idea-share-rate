@@ -16,7 +16,7 @@ type IdeaCreate struct {
 	Description string
 	Links       []responses.Link
 	Files       []ParsedFile
-	Paths       []string
+	AllFiles    []SketchSturctInIdea
 }
 
 type IdeaUpdate struct {
@@ -57,23 +57,23 @@ type IdeaLightData struct {
 }
 
 type IdeaSpecData struct {
-	ID            string
-	Worker        WorkerLightData
-	Name          string
-	Date          time.Time
-	Description   string
-	Genre         string
-	Mechanics     []string
-	Links         []responses.Link
-	FilePaths     []responses.Sketch
-	CriteriaRates []responses.CriteriaRate
-	OverallRate   int
+	ID            string                   `bson:"_id" json:"id"`
+	Worker        WorkerBsonModelInIdea    `bson:"worker" json:"worker"`
+	Name          string                   `bson:"name" json:"name"`
+	Date          time.Time                `bson:"date" json:"date"`
+	Description   string                   `bson:"description" json:"description"`
+	Genre         string                   `bson:"genre" json:"genre"`
+	Mechanics     []string                 `bson:"mechanics" json:"mechanics"`
+	Links         []responses.Link         `bson:"links" json:"links"`
+	FilePaths     []responses.Sketch       `bson:"files" json:"file_paths"`
+	CriteriaRates []responses.CriteriaRate `bson:"rates" json:"criteria_rate"`
+	OverallRate   int                      `bson:"rate" json:"rate"`
 }
 
 type IdeaList struct {
-	Total         int
-	LastSubmitted time.Time
-	Result        []IdeaLightData
+	Total         int             `json:"total"`
+	LastSubmitted time.Time       `json:"last_submitted"`
+	Result        []IdeaLightData `json:"result"`
 }
 
 type RateIdeaCritera struct {
@@ -84,8 +84,8 @@ type RateIdeaCritera struct {
 //CRITERIA
 
 type CriteriaSpecData struct {
-	ID   string
-	Name string
+	ID   primitive.ObjectID `bson:"_id"`
+	Name string             `bson:"name"`
 }
 
 type CriteriaUpdate struct {
@@ -118,4 +118,10 @@ type RatingStructInIdea struct {
 
 type ArrayOfRatesIdea struct {
 	Rates []RatingStructInIdea `bson:"rates"`
+}
+
+type SketchSturctInIdea struct {
+	SketchID primitive.ObjectID `bson:"sketch_id"`
+	FileName string             `bson:"name"`
+	Path     string             `bson:"file_path"`
 }

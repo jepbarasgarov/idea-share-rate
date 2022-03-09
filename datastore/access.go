@@ -158,10 +158,10 @@ type Access interface {
 		Filter *models.IdeaFilter,
 	) (item *models.IdeaList, err error)
 
-	GetIdeaByID(
+	IdeaGet(
 		ctx context.Context,
 		cu *responses.ActionInfo,
-		ID string,
+		ID primitive.ObjectID,
 	) (item *models.IdeaSpecData, err error)
 
 	IdeaDelete(
@@ -184,7 +184,7 @@ type Access interface {
 	CriteriaGetByName(
 		ctx context.Context,
 		criteriaName string,
-	) (item *string, err error)
+	) (item *primitive.ObjectID, err error)
 
 	CriteriaCreate(
 		ctx context.Context,

@@ -7,6 +7,7 @@ import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,50 +18,6 @@ import (
 
 //IDEA
 
-func (api *APIController) IdeaList(
-	ctx context.Context,
-	Filter *models.IdeaFilter,
-	cu *responses.ActionInfo,
-) (item *models.IdeaList, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaList",
-	})
-
-	item, err = api.access.IdeaList(ctx, cu, Filter)
-	if err != nil {
-		eMsg := "error in api.access.IdeaList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
-
-func (api *APIController) IdeaGet(
-	ctx context.Context,
-	id string,
-	cu *responses.ActionInfo,
-) (item *models.IdeaSpecData, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaGet",
-	})
-
-	item, err = api.access.GetIdeaByID(ctx, cu, id)
-	if err != nil {
-		eMsg := "error in api.access.GetIdeaByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	if item == nil {
-		eMsg := "Idea not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-		return
-	}
-	return
-}
-
 func (api *APIController) IdeaDelete(
 	ctx context.Context,
 	id string,
@@ -70,19 +27,19 @@ func (api *APIController) IdeaDelete(
 		"method": "api.IdeaGet",
 	})
 
-	idea, err := api.access.GetIdeaByID(ctx, cu, id)
-	if err != nil {
-		eMsg := "error in api.access.GetIdeaByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	if idea == nil {
-		eMsg := "Idea not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-		return
-	}
+	// idea, err := api.access.IdeaGet(ctx, cu, id)
+	// if err != nil {
+	// 	eMsg := "error in api.access.GetIdeaByID"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+	// 	return
+	// }
+	// if idea == nil {
+	// 	eMsg := "Idea not found"
+	// 	clog.WithError(err).Error(eMsg)
+	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+	// 	return
+	// }
 
 	err = api.access.IdeaDelete(ctx, id)
 	if err != nil {
@@ -448,6 +405,7 @@ func (api *APIController) IdeaCreate(
 	}
 
 	if !mechanicsValid {
+		fmt.Println(Idea.Mechanics)
 		eMsg := "Mechanics not found"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
@@ -462,13 +420,19 @@ func (api *APIController) IdeaCreate(
 			breakingIndex = i
 			break
 		}
-		Idea.Paths = append(Idea.Paths, path)
+		sketch := models.SketchSturctInIdea{
+			SketchID: primitive.NewObjectID(),
+			Path:     path,
+			FileName: pFile.FileHeader.Filename,
+		}
+
+		Idea.AllFiles = append(Idea.AllFiles, sketch)
 	}
 
 	defer func() {
 		if err != nil || breakingIndex != -1 {
-			for _, path := range Idea.Paths {
-				_ = os.Remove(filepath.Join(config.Conf.StaticDir, path))
+			for _, sketch := range Idea.AllFiles {
+				_ = os.Remove(filepath.Join(config.Conf.StaticDir, sketch.Path))
 			}
 		}
 	}()
@@ -561,6 +525,50 @@ func (api *APIController) IdeaRate(
 		return
 	}
 
+	return
+}
+
+func (api *APIController) IdeaList(
+	ctx context.Context,
+	Filter *models.IdeaFilter,
+	cu *responses.ActionInfo,
+) (item *models.IdeaList, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaList",
+	})
+
+	item, err = api.access.IdeaList(ctx, cu, Filter)
+	if err != nil {
+		eMsg := "error in api.access.IdeaList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	return
+}
+
+func (api *APIController) IdeaGet(
+	ctx context.Context,
+	id primitive.ObjectID,
+	cu *responses.ActionInfo,
+) (item *models.IdeaSpecData, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaGet",
+	})
+
+	item, err = api.access.IdeaGet(ctx, cu, id)
+	if err != nil {
+		eMsg := "error in api.access.IdeaGet"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	if item == nil {
+		eMsg := "Idea not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+		return
+	}
 	return
 }
 

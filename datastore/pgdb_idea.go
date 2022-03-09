@@ -65,185 +65,6 @@ const (
 
 //IDEA
 
-func (d *MgAccess) IdeaList(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	Filter *models.IdeaFilter,
-) (item *models.IdeaList, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.IdeaList",
-	})
-
-	item = &models.IdeaList{}
-	item.Result = make([]models.IdeaLightData, 0)
-
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-
-	x := bson.D{}
-
-	if Filter.WorkerID != nil {
-		x = append(x, bson.E{"worker._id", *Filter.WorkerID})
-	}
-
-	if Filter.Name != nil {
-		x = append(x, bson.E{"name", bson.D{{"$regex", *Filter.Name}, {"$options", "i"}}})
-
-	}
-
-	if Filter.Genre != nil {
-		x = append(x, bson.E{"genre", *Filter.Genre})
-	}
-
-	if Filter.BeginDate != nil {
-		dateCompareBegin := bson.E{"date", bson.M{"$gte": *Filter.BeginDate}}
-		x = append(x, dateCompareBegin)
-	}
-
-	if Filter.EndDate != nil {
-		dateCompareEnd := bson.E{"date", bson.M{"$lte": *Filter.EndDate}}
-		x = append(x, dateCompareEnd)
-
-	}
-
-	if Filter.Mechanics != nil {
-		mechSearch := bson.E{"mechanics", bson.M{"$all": *Filter.Mechanics}}
-		x = append(x, mechSearch)
-	}
-
-	matchStageList := bson.D{{"$match", x}}
-	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
-	projectStageLIst := bson.D{{"$project", bson.D{
-		{"_id", 1},
-		{"name", 1},
-		{"worker", 1},
-		{"date", 1},
-		{"description", 1},
-		{"create_ts", 1},
-		{"path", bson.M{"$arrayElemAt": bson.A{"$paths", 0}}},
-		{"is_it_new", bson.M{"$ne": bson.A{"$rates.user_id", Filter.UserID}}},
-		{"rate", "$rates.rate"},
-	}}}
-	groupStageList := bson.D{{"$group", bson.D{
-		{"_id", "$_id"},
-		{"name", bson.M{"$first": "$name"}},
-		{"worker", bson.M{"$first": "$worker"}},
-		{"date", bson.M{"$first": "$date"}},
-		{"create_ts", bson.M{"$first": "$create_ts"}},
-		{"description", bson.M{"$first": "$description"}},
-		{"path", bson.M{"$first": "$path"}},
-		{"is_it_new", bson.M{"$min": "$is_it_new"}},
-		{"avg", bson.M{"$avg": "$rate"}},
-	}}}
-
-	var sortStageList bson.D
-	sortStageList = bson.D{{"$sort", bson.D{{"is_it_new", -1}, {"create_ts", 1}}}}
-
-	if Filter.Condition != nil {
-		if *Filter.Condition == responses.RatedIdea {
-			sortStageList = bson.D{{"$sort", bson.M{"is_it_new": 1}}}
-		}
-	}
-
-	limitStageList := bson.D{{"$limit", Filter.Limit}}
-	offsetStageList := bson.D{{"$skip", Filter.Offset}}
-
-	db := client.Database("idea-share")
-	coll := db.Collection("idea")
-
-	cursorIdeaLits, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, unWindStagsList, projectStageLIst, groupStageList, sortStageList, offsetStageList, limitStageList})
-	if err != nil {
-		eMsg := "Error in cursorIdeaLits"
-		clog.WithError(err).Error(eMsg)
-		return
-	}
-
-	for cursorIdeaLits.Next(ctx) {
-		if err = cursorIdeaLits.All(ctx, &item.Result); err != nil {
-			eMsg := "Error in reading cursorIdeaLits"
-			clog.WithError(err).Error(eMsg)
-			return
-		}
-	}
-
-	for i := 0; i < len(item.Result); i++ {
-		if !item.Result[i].IsItNew {
-			under := *item.Result[i].AvgRate - float64(int(*item.Result[i].AvgRate))
-			upper := 1 - under
-			if under >= upper {
-				item.Result[i].OverallRate = int(*item.Result[i].AvgRate) + 1
-			} else {
-				item.Result[i].OverallRate = int(*item.Result[i].AvgRate)
-			}
-
-			item.Result[i].AvgRate = nil
-		}
-	}
-
-	groupStageCount := bson.D{{"$group", bson.D{
-		{"_id", ""},
-		{"total", bson.M{"$sum": 1}},
-	}}}
-
-	projectStageCount := bson.D{{"$project", bson.D{{"_id", 0}}}}
-
-	var total []bson.M
-
-	cursorIdeaCount, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, groupStageCount, projectStageCount})
-	if err != nil {
-		eMsg := "Error in cursorIdeaCount"
-		clog.WithError(err).Error(eMsg)
-		return
-	}
-
-	for cursorIdeaCount.Next(ctx) {
-		if err = cursorIdeaCount.All(ctx, &total); err != nil {
-			eMsg := "Error in reading cursor"
-			clog.WithError(err).Error(eMsg)
-			return
-		}
-	}
-
-	if len(total) > 0 {
-		item.Total = int(total[0]["total"].(int32))
-	}
-
-	if Filter.WorkerID != nil {
-		matchStageSubmit := bson.D{{"$match", bson.M{"worker._id": *Filter.WorkerID}}}
-		sortStageSubmit := bson.D{{"$sort", bson.M{"create_ts": -1}}}
-		limitStageSubmit := bson.D{{"$limit", 1}}
-		projectStageSubmit := bson.D{{"$project", bson.D{{"create_ts", 1}, {"_id", 0}}}}
-		cursorGetLastSubmitOfWorker, err1 := coll.Aggregate(ctx, mongo.Pipeline{matchStageSubmit, sortStageSubmit, limitStageSubmit, projectStageSubmit})
-		if err1 != nil {
-			eMsg := "Error in cursorGetLastSubmitOfWorker"
-			clog.WithError(err1).Error(eMsg)
-			return
-		}
-
-		var lastSubmit []bson.M
-
-		for cursorGetLastSubmitOfWorker.Next(ctx) {
-			if err = cursorGetLastSubmitOfWorker.All(ctx, &lastSubmit); err != nil {
-				eMsg := "Error in reading cursorGetLastSubmitOfWorker"
-				clog.WithError(err).Error(eMsg)
-				return
-			}
-		}
-
-		if len(lastSubmit) > 0 {
-			item.LastSubmitted = lastSubmit[0]["create_ts"].(primitive.DateTime).Time().UTC()
-
-		}
-
-	}
-
-	return
-}
-
 func (d *PgAccess) IdeaDelete(
 	ctx context.Context,
 	ID string,
@@ -497,7 +318,7 @@ func (d *MgAccess) IdeaCreate(
 		{Key: "mechanics", Value: Idea.Mechanics},
 		{Key: "links", Value: Idea.Links},
 		{Key: "description", Value: Idea.Description},
-		{Key: "paths", Value: Idea.Paths},
+		{Key: "files", Value: Idea.AllFiles},
 		{Key: "rates", Value: rates},
 		{Key: "create_ts", Value: time.Now().UTC()},
 	})
@@ -571,6 +392,289 @@ func (d *MgAccess) IdeaRate(
 			averageRate = int(point) + 1
 		} else {
 			averageRate = int(point)
+		}
+
+	}
+
+	return
+}
+
+func (d *MgAccess) IdeaList(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	Filter *models.IdeaFilter,
+) (item *models.IdeaList, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IdeaList",
+	})
+
+	item = &models.IdeaList{}
+	item.Result = make([]models.IdeaLightData, 0)
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	db := client.Database("idea-share")
+	coll := db.Collection("idea")
+
+	x := bson.D{}
+
+	if Filter.WorkerID != nil {
+		x = append(x, bson.E{"worker._id", *Filter.WorkerID})
+	}
+
+	if Filter.Name != nil {
+		x = append(x, bson.E{"name", bson.D{{"$regex", *Filter.Name}, {"$options", "i"}}})
+
+	}
+
+	if Filter.Genre != nil {
+		x = append(x, bson.E{"genre", *Filter.Genre})
+	}
+
+	if Filter.BeginDate != nil {
+		dateCompareBegin := bson.E{"date", bson.M{"$gte": *Filter.BeginDate}}
+		x = append(x, dateCompareBegin)
+	}
+
+	if Filter.EndDate != nil {
+		dateCompareEnd := bson.E{"date", bson.M{"$lte": *Filter.EndDate}}
+		x = append(x, dateCompareEnd)
+
+	}
+
+	if Filter.Mechanics != nil {
+		if len(*Filter.Mechanics) > 0 {
+			mechSearch := bson.E{"mechanics", bson.M{"$all": *Filter.Mechanics}}
+			x = append(x, mechSearch)
+		}
+	}
+	matchStageList := bson.D{{"$match", x}}
+	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
+	projectStageLIst := bson.D{{"$project", bson.D{
+		{"_id", 1},
+		{"name", 1},
+		{"worker", 1},
+		{"date", 1},
+		{"description", 1},
+		{"create_ts", 1},
+		{"path", bson.M{"$arrayElemAt": bson.A{"$files.file_path", 0}}},
+		{"is_it_new", bson.M{"$ne": bson.A{"$rates.user_id", Filter.UserID}}},
+		{"rate", "$rates.rate"},
+	}}}
+	groupStageList := bson.D{{"$group", bson.D{
+		{"_id", "$_id"},
+		{"name", bson.M{"$first": "$name"}},
+		{"worker", bson.M{"$first": "$worker"}},
+		{"date", bson.M{"$first": "$date"}},
+		{"create_ts", bson.M{"$first": "$create_ts"}},
+		{"description", bson.M{"$first": "$description"}},
+		{"path", bson.M{"$first": "$path"}},
+		{"is_it_new", bson.M{"$min": "$is_it_new"}},
+		{"avg", bson.M{"$avg": "$rate"}},
+	}}}
+
+	var sortStageList bson.D
+	sortStageList = bson.D{{"$sort", bson.D{{"is_it_new", -1}, {"create_ts", -1}}}}
+
+	if Filter.Condition != nil {
+		if *Filter.Condition == responses.RatedIdea {
+			sortStageList = bson.D{{"$sort", bson.M{"is_it_new": 1}}}
+		}
+	}
+
+	limitStageList := bson.D{{"$limit", Filter.Limit}}
+	offsetStageList := bson.D{{"$skip", Filter.Offset}}
+
+	cursorIdeaLits, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, unWindStagsList, projectStageLIst, groupStageList, sortStageList, offsetStageList, limitStageList})
+	if err != nil {
+		eMsg := "Error in cursorIdeaLits"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	for cursorIdeaLits.Next(ctx) {
+		if err = cursorIdeaLits.All(ctx, &item.Result); err != nil {
+			eMsg := "Error in reading cursorIdeaLits"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	for i := 0; i < len(item.Result); i++ {
+		if !item.Result[i].IsItNew {
+			under := *item.Result[i].AvgRate - float64(int(*item.Result[i].AvgRate))
+			upper := 1 - under
+			if under >= upper {
+				item.Result[i].OverallRate = int(*item.Result[i].AvgRate) + 1
+			} else {
+				item.Result[i].OverallRate = int(*item.Result[i].AvgRate)
+			}
+
+			item.Result[i].AvgRate = nil
+		}
+
+		item.Result[i].AvgRate = nil
+
+	}
+
+	groupStageCount := bson.D{{"$group", bson.D{
+		{"_id", ""},
+		{"total", bson.M{"$sum": 1}},
+	}}}
+
+	projectStageCount := bson.D{{"$project", bson.D{{"_id", 0}}}}
+
+	var total []bson.M
+
+	cursorIdeaCount, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, groupStageCount, projectStageCount})
+	if err != nil {
+		eMsg := "Error in cursorIdeaCount"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	for cursorIdeaCount.Next(ctx) {
+		if err = cursorIdeaCount.All(ctx, &total); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	if len(total) > 0 {
+		item.Total = int(total[0]["total"].(int32))
+	}
+
+	if Filter.WorkerID != nil {
+		matchStageSubmit := bson.D{{"$match", bson.M{"worker._id": *Filter.WorkerID}}}
+		sortStageSubmit := bson.D{{"$sort", bson.M{"create_ts": -1}}}
+		limitStageSubmit := bson.D{{"$limit", 1}}
+		projectStageSubmit := bson.D{{"$project", bson.D{{"create_ts", 1}, {"_id", 0}}}}
+		cursorGetLastSubmitOfWorker, err1 := coll.Aggregate(ctx, mongo.Pipeline{matchStageSubmit, sortStageSubmit, limitStageSubmit, projectStageSubmit})
+		if err1 != nil {
+			eMsg := "Error in cursorGetLastSubmitOfWorker"
+			clog.WithError(err1).Error(eMsg)
+			return
+		}
+
+		var lastSubmit []bson.M
+
+		for cursorGetLastSubmitOfWorker.Next(ctx) {
+			if err = cursorGetLastSubmitOfWorker.All(ctx, &lastSubmit); err != nil {
+				eMsg := "Error in reading cursorGetLastSubmitOfWorker"
+				clog.WithError(err).Error(eMsg)
+				return
+			}
+		}
+
+		if len(lastSubmit) > 0 {
+			item.LastSubmitted = lastSubmit[0]["create_ts"].(primitive.DateTime).Time().UTC()
+
+		}
+
+	}
+
+	return
+}
+
+func (d *MgAccess) IdeaGet(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	ID primitive.ObjectID,
+) (item *models.IdeaSpecData, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.GetIdeaByID",
+	})
+	item = &models.IdeaSpecData{}
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
+
+	db := client.Database("idea-share")
+	collIdea := db.Collection("idea")
+
+	err = collIdea.FindOne(ctx, bson.M{"_id": ID}).Decode(&item)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = nil
+			item = nil
+			return
+		}
+		eMsg := "Error in Find criteria with ID"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	usersOwnRates := make([]responses.CriteriaRate, 0)
+	totalRate := 0
+	rateNum := 0
+	isItNewToUser := true
+	for i := 0; i < len(item.CriteriaRates); i++ {
+		totalRate += item.CriteriaRates[i].Rate
+		rateNum++
+		if item.CriteriaRates[i].UserID.Hex() == cu.ID {
+			item.CriteriaRates[i].UserID = nil
+			usersOwnRates = append(usersOwnRates, item.CriteriaRates[i])
+			isItNewToUser = false
+		}
+	}
+
+	item.CriteriaRates = usersOwnRates
+
+	collCriteria := db.Collection("criteria")
+
+	cursor, err := collCriteria.Find(ctx, bson.M{})
+	if err != nil {
+		eMsg := "Error in Find"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var crtrs []models.CriteriaSpecData
+
+	for cursor.Next(ctx) {
+		if err = cursor.All(ctx, &crtrs); err != nil {
+			eMsg := "Error in reading cursor"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	for i := 0; i < len(crtrs); i++ {
+		unequal := 0
+		for j := 0; j < len(item.CriteriaRates); j++ {
+			if crtrs[i].ID != item.CriteriaRates[j].ID {
+				unequal++
+			} else {
+				break
+			}
+		}
+		if unequal == len(item.CriteriaRates) {
+			criterRate := responses.CriteriaRate{
+				ID:   crtrs[i].ID,
+				Name: crtrs[i].Name,
+				Rate: 0,
+			}
+
+			item.CriteriaRates = append(item.CriteriaRates, criterRate)
+		}
+	}
+
+	if !isItNewToUser {
+		avg := float64(totalRate) / float64(rateNum)
+		under := avg - float64(int(avg))
+		upper := 1 - under
+		if under >= upper {
+			item.OverallRate = int(avg) + 1
+		} else {
+			item.OverallRate = int(avg)
 		}
 
 	}
@@ -815,7 +919,7 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 
 	}
 	db := client.Database("idea-share")
-	coll := db.Collection("criteria")
+	coll := db.Collection("mechanic")
 
 	groupStage := bson.D{{"$group", bson.D{{"_id", ""}, {"mechs", bson.D{{"$push", "$name"}}}}}}
 	matchStage := bson.D{{"$match", bson.D{{"mechs", bson.D{{"$all", mechList}}}}}}
@@ -879,7 +983,7 @@ func (d *MgAccess) CriteriaCreate(
 	}
 
 	item = &models.CriteriaSpecData{
-		ID:   row.InsertedID.(primitive.ObjectID).Hex(),
+		ID:   row.InsertedID.(primitive.ObjectID),
 		Name: CriteriaName,
 	}
 	return
@@ -888,7 +992,7 @@ func (d *MgAccess) CriteriaCreate(
 func (d *MgAccess) CriteriaGetByName(
 	ctx context.Context,
 	criteriaName string,
-) (item *string, err error) {
+) (item *primitive.ObjectID, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.CriteriaGetByName",
 	})
@@ -918,7 +1022,7 @@ func (d *MgAccess) CriteriaGetByName(
 		return
 	}
 
-	id := u["_id"].(primitive.ObjectID).Hex()
+	id := u["_id"].(primitive.ObjectID)
 	item = &id
 
 	return
@@ -959,7 +1063,7 @@ func (d *MgAccess) CriteriaGetByID(
 		return
 	}
 
-	item.ID = u["_id"].(primitive.ObjectID).Hex()
+	item.ID = u["_id"].(primitive.ObjectID)
 	item.Name = u["name"].(string)
 
 	return
@@ -1037,7 +1141,7 @@ func (d *MgAccess) CriteriaList(
 
 	for i := 0; i < len(crtrs); i++ {
 		c := models.CriteriaSpecData{
-			ID:   crtrs[i]["_id"].(primitive.ObjectID).Hex(),
+			ID:   crtrs[i]["_id"].(primitive.ObjectID),
 			Name: crtrs[i]["name"].(string),
 		}
 

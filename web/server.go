@@ -57,7 +57,7 @@ func NewRouter(s *Server) *mux.Router {
 	r.HandleFunc("/api/v1/idea/list", s.HandleIdeaList).Methods("POST")
 	r.HandleFunc("/api/v1/idea/rate", s.HandleRateIdea).Methods("POST")
 
-	r.HandleFunc("/api/v1/idea/get/{id}/pdf", s.HandleIdeaGetPdf).Methods("POST")
+	// r.HandleFunc("/api/v1/idea/get/{id}/pdf", s.HandleIdeaGetPdf).Methods("POST")
 	r.HandleFunc("/api/v1/idea/list/pdf", s.HandleIdeaListGetPdf).Methods("POST")
 
 	//CRITERIA
