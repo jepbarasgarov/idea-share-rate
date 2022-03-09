@@ -166,7 +166,7 @@ type Access interface {
 
 	IdeaDelete(
 		ctx context.Context,
-		ID string,
+		ID primitive.ObjectID,
 	) (err error)
 
 	IdeaUpdate(

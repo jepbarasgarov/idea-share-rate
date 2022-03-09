@@ -12,7 +12,7 @@
         ]
     },
     "jwt": {
-        "access_token_expiry": 3600,
+        "access_token_expiry": 36000,
         "refresh_token_expiry": 86400,
         "secret": "k547x6Dhm1xfuAtQpEdfg30fZ147nEcb59suGtdanLu0mXVhEooayMo8A7FVa3Ht"
     },

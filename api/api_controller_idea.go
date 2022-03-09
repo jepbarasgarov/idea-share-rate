@@ -18,40 +18,6 @@ import (
 
 //IDEA
 
-func (api *APIController) IdeaDelete(
-	ctx context.Context,
-	id string,
-	cu *responses.ActionInfo,
-) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.IdeaGet",
-	})
-
-	// idea, err := api.access.IdeaGet(ctx, cu, id)
-	// if err != nil {
-	// 	eMsg := "error in api.access.GetIdeaByID"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
-	// if idea == nil {
-	// 	eMsg := "Idea not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-	// 	return
-	// }
-
-	err = api.access.IdeaDelete(ctx, id)
-	if err != nil {
-		eMsg := "error in api.access.IdeaDelete"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 // func (api *APIController) IdeaUpdate(
 // 	ctx context.Context,
 // 	cu *responses.ActionInfo,
@@ -466,38 +432,36 @@ func (api *APIController) IdeaRate(
 		"method": "api.IdeaRate",
 	})
 
-	// idea, err := api.access.GetIdeaByID(ctx, cu, Rating.IdeaID)
-	// if err != nil {
-	// 	eMsg := "error in api.access.GetIdeaByID"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
+	idea, err := api.access.IdeaGet(ctx, cu, Rating.IdeaID)
+	if err != nil {
+		eMsg := "error in api.access.GetIdeaByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 
-	// if idea == nil {
-	// 	eMsg := "idea not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
-	// 	return
-	// }
+	if idea == nil {
+		eMsg := "idea not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+		return
+	}
 
-	// criterNum := len(idea.CriteriaRates)
-	// var criteriaExists bool = false
-	// for i := 0; i < criterNum; i++ {
-	// 	if idea.CriteriaRates[i].ID == Rating.CriteriaID {
-	// 		criteriaExists = true
-	// 		break
-	// 	}
-	// }
+	criterNum := len(idea.CriteriaRates)
+	var criteriaExists bool = false
+	for i := 0; i < criterNum; i++ {
+		if idea.CriteriaRates[i].ID == Rating.Rating.CriteriaID {
+			criteriaExists = true
+			break
+		}
+	}
 
-	// if !criteriaExists {
-	// 	eMsg := "Criteria not found"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
-	// 	return
-	// }
-
-	//TODO : idea barmy check et
+	if !criteriaExists {
+		eMsg := "Criteria not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_CRITERIA)
+		return
+	}
 
 	criter, err := api.access.CriteriaGetByID(ctx, Rating.Rating.CriteriaID)
 	if err != nil {
@@ -569,6 +533,40 @@ func (api *APIController) IdeaGet(
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
 		return
 	}
+	return
+}
+
+func (api *APIController) IdeaDelete(
+	ctx context.Context,
+	id primitive.ObjectID,
+	cu *responses.ActionInfo,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.IdeaGet",
+	})
+
+	idea, err := api.access.IdeaGet(ctx, cu, id)
+	if err != nil {
+		eMsg := "error in api.access.GetIdeaByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	if idea == nil {
+		eMsg := "Idea not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_IDEA)
+		return
+	}
+
+	err = api.access.IdeaDelete(ctx, id)
+	if err != nil {
+		eMsg := "error in api.access.IdeaDelete"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
 	return
 }
 

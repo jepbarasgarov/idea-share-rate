@@ -65,33 +65,6 @@ const (
 
 //IDEA
 
-func (d *PgAccess) IdeaDelete(
-	ctx context.Context,
-	ID string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.IdeaDelete",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		_, err = conn.Exec(ctx, sqlDeleteIdea, ID)
-		if err != nil {
-			eMsg := "error in sqlDeleteIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) IdeaUpdate(
 	ctx context.Context,
 	pTx pgx.Tx,
@@ -682,6 +655,33 @@ func (d *MgAccess) IdeaGet(
 	return
 }
 
+func (d *MgAccess) IdeaDelete(
+	ctx context.Context,
+	ID primitive.ObjectID,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IdeaDelete",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+	}
+
+	db := client.Database("idea-share")
+	collIdea := db.Collection("idea")
+
+	_, err = collIdea.DeleteOne(ctx, bson.M{"_id": ID})
+	if err != nil {
+		eMsg := "Error in Idea delete"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	return
+}
+
 //GENRE
 func (d *MgAccess) GenreUpsert(
 	ctx context.Context,
@@ -784,10 +784,7 @@ func (d *MgAccess) GenreDelete(
 		clog.WithError(err).Error(eMsg)
 		return
 	}
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
+
 	return
 }
 
