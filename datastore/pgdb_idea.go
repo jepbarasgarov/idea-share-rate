@@ -63,43 +63,6 @@ const (
 	sqlSelectcriteriaList = `SELECT id, name FROM tbl_criteria`
 )
 
-// GENRE
-
-// MECHANICS
-
-func (d *PgAccess) MechanicUpdate(
-	ctx context.Context,
-	MechUpdate models.MechanicUpdate,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.MechanicUpdate",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		_, err = conn.Exec(ctx, sqlUpdateMechanic, MechUpdate.NewMech, MechUpdate.OldMech)
-		if err != nil {
-			eMsg := "error in sqlUpdateMechanic"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		_, err = conn.Exec(ctx, sqlUpdateAllmechanicNamesIdea, MechUpdate.OldMech, MechUpdate.NewMech)
-		if err != nil {
-			eMsg := "error in sqlUpdateAllmechanicNamesIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 // CRITERIA
 
 func (d *PgAccess) CountCriteriaRates(
@@ -242,7 +205,7 @@ func (d *MgAccess) IdeaRate(
 
 	_, err = coll.UpdateOne(ctx, MatchStage, addNewRating)
 	if err != nil {
-		eMsg := "error in addng new rate"
+		eMsg := "error in adding new rate"
 		clog.WithError(err).Error(eMsg)
 		err = errors.Wrap(err, eMsg)
 		return
@@ -935,6 +898,57 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 
 	if results != nil {
 		item = true
+	}
+
+	return
+}
+
+func (d *MgAccess) MechanicUpdate(
+	ctx context.Context,
+	MechUpdate models.MechanicUpdate,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.MechanicUpdate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	collMech := db.Collection("mechanic")
+	collIdea := db.Collection("idea")
+
+	filterMech := bson.M{"name": MechUpdate.OldMech}
+	updateMech := bson.M{"$set": bson.M{"name": MechUpdate.NewMech}}
+
+	_, err = collMech.UpdateOne(ctx, filterMech, updateMech)
+	if err != nil {
+		eMsg := "Error in genre update"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	MatchStage := bson.M{"mechanics": MechUpdate.OldMech}
+	removeOldMech := bson.M{"$pull": bson.M{"mechanics": MechUpdate.OldMech}}
+	addNewMech := bson.M{"$push": bson.M{"mechanics": MechUpdate.NewMech}}
+
+	_, err = collIdea.UpdateMany(ctx, MatchStage, addNewMech)
+	if err != nil {
+		eMsg := "error in adding new mechanic"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	_, err = collIdea.UpdateMany(ctx, MatchStage, removeOldMech)
+	if err != nil {
+		eMsg := "error in removing old mechanic"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
 	}
 
 	return

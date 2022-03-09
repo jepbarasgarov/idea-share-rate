@@ -21,69 +21,6 @@ import (
 
 //MECHANICS
 
-func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleMechanicUpdate"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-	}
-
-	_, err = s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	var MechUpdate models.MechanicUpdate
-	MechUpdate.OldMech = r.FormValue("old_mechanic")
-	if len(MechUpdate.OldMech) == 0 || len(MechUpdate.OldMech) > 256 {
-		emsg := "OldMechanic name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	MechUpdate.NewMech = r.FormValue("new_mechanic")
-	if len(MechUpdate.NewMech) == 0 || len(MechUpdate.NewMech) > 256 {
-		emsg := "NewMechanic name is not compatible"
-		clog.WithError(err).Error(emsg)
-		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.MechanicUpdate(ctx, MechUpdate)
-	if err != nil {
-		eMsg := "error in s.c.MechanicUpdate"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, data, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 //CRITERIA
 
 // func (s *Server) HandleCriteriaDelete(w http.ResponseWriter, r *http.Request) {
@@ -1272,6 +1209,69 @@ func (s *Server) HandleMechanicDelete(w http.ResponseWriter, r *http.Request) {
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, nil, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleMechanicUpdate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleMechanicUpdate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	_, err = s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var MechUpdate models.MechanicUpdate
+	MechUpdate.OldMech = r.FormValue("old_mechanic")
+	if len(MechUpdate.OldMech) == 0 || len(MechUpdate.OldMech) > 256 {
+		emsg := "OldMechanic name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	MechUpdate.NewMech = r.FormValue("new_mechanic")
+	if len(MechUpdate.NewMech) == 0 || len(MechUpdate.NewMech) > 256 {
+		emsg := "NewMechanic name is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.MechanicUpdate(ctx, MechUpdate)
+	if err != nil {
+		eMsg := "error in s.c.MechanicUpdate"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, requestLang)
 	clog.Info(handleName + " success")
 }
 

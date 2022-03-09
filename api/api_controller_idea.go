@@ -16,71 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-//IDEA
-
-//GENRE
-
-//MECHANICS
-
-func (api *APIController) MechanicUpdate(
-	ctx context.Context,
-	MechUpdate models.MechanicUpdate,
-) (item *string, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.MechanicUpdate",
-	})
-
-	MechList, err := api.access.MechanicList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.GenreUpsert"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	var oldExist, newExist bool = false, false
-
-	for i := 0; i < len(*MechList); i++ {
-		if (*MechList)[i] == MechUpdate.OldMech {
-			oldExist = true
-		}
-		if (*MechList)[i] == MechUpdate.NewMech {
-			newExist = true
-		}
-
-	}
-
-	if !oldExist {
-		eMsg := "Mechanics not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
-		return
-	}
-
-	if MechUpdate.OldMech == MechUpdate.NewMech {
-		item = &MechUpdate.NewMech
-		return
-	}
-
-	if newExist {
-		eMsg := "Mechanic is already in use"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_MECH)
-		return
-	}
-
-	err = api.access.MechanicUpdate(ctx, MechUpdate)
-	if err != nil {
-		eMsg := "error in api.access.MechanicUpdate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	item = &MechUpdate.NewMech
-	return
-}
-
 //CRITERIA
 
 // func (api *APIController) CriteriaDelete(
@@ -725,6 +660,65 @@ func (api *APIController) MechanicDelete(
 		return
 	}
 
+	return
+}
+
+func (api *APIController) MechanicUpdate(
+	ctx context.Context,
+	MechUpdate models.MechanicUpdate,
+) (item *string, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.MechanicUpdate",
+	})
+
+	MechList, err := api.access.MechanicList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreUpsert"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	var oldExist, newExist bool = false, false
+
+	for i := 0; i < len(*MechList); i++ {
+		if (*MechList)[i] == MechUpdate.OldMech {
+			oldExist = true
+		}
+		if (*MechList)[i] == MechUpdate.NewMech {
+			newExist = true
+		}
+
+	}
+
+	if !oldExist {
+		eMsg := "Mechanics not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+		return
+	}
+
+	if MechUpdate.OldMech == MechUpdate.NewMech {
+		item = &MechUpdate.NewMech
+		return
+	}
+
+	if newExist {
+		eMsg := "Mechanic is already in use"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_MECH)
+		return
+	}
+
+	err = api.access.MechanicUpdate(ctx, MechUpdate)
+	if err != nil {
+		eMsg := "error in api.access.MechanicUpdate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	item = &MechUpdate.NewMech
 	return
 }
 
