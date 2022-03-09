@@ -82,7 +82,7 @@ type Access interface {
 
 	CountWorkersIdea(
 		ctx context.Context,
-		ID string,
+		ID primitive.ObjectID,
 	) (item int, err error)
 
 	WorkerDelete(

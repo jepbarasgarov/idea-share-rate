@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,37 +24,6 @@ const (
 	sqlUpsertPosition     = `INSERT INTO tbl_position(name) VALUES($1) ON CONFLICT ON CONSTRAINT position_unique DO NOTHING`
 	sqlSelectPositionList = `SELECT ARRAY(SELECT name FROM tbl_position)`
 )
-
-func (d *PgAccess) CountWorkersIdea(
-	ctx context.Context,
-	ID string,
-) (item int, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.CountWorkersIdea",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		var total int
-		row := conn.QueryRow(ctx, sqlCountIdeaNumberOfWorker, ID)
-		err = row.Scan(&total)
-		if err != nil {
-			eMsg := "error in sqlCountIdeaNumberOfWorker"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = total
-
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 //////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -250,6 +218,57 @@ func (d *MgAccess) WorkerAutocompleteList(
 	item = &wrkrs
 
 	return
+}
+
+func (d *MgAccess) CountWorkersIdea(
+	ctx context.Context,
+	ID primitive.ObjectID,
+) (item int, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.CountWorkersIdea",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		log.Fatal(err)
+
+	}
+
+	db := client.Database("idea-share")
+	collIdea := db.Collection("idea")
+
+	projectStageLIst := bson.D{{"$project", bson.D{
+		{"_id", 0},
+		{"worker._id", 1},
+	}}}
+	groupStageList := bson.D{{"$group", bson.D{
+		{"_id", "$worker._id"},
+		{"count", bson.M{"$sum": 1}},
+	}}}
+	matchStageList := bson.D{{"$match", bson.M{"_id": ID}}}
+
+	cursorCountIdeaOfWorker, err := collIdea.Aggregate(ctx, mongo.Pipeline{projectStageLIst, groupStageList, matchStageList})
+	if err != nil {
+		eMsg := "Error in cursorCountIdeaOfWorker"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var res []bson.M
+	for cursorCountIdeaOfWorker.Next(ctx) {
+		if err = cursorCountIdeaOfWorker.All(ctx, &res); err != nil {
+			eMsg := "Error in reading cursorCountIdeaOfWorker"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+	}
+
+	if len(res) > 0 {
+		item = int(res[0]["count"].(int32))
+	}
+
+	return
+
 }
 
 // position

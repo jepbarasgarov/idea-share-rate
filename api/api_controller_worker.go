@@ -91,21 +91,20 @@ func (api *APIController) WorkerDelete(
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_WORKER)
 		return
 	}
-	//TODO: Idea gosulandan son su yerini commentdan ac
-	// numOfIdeas, err := api.access.CountWorkersIdea(ctx, ID)
-	// if err != nil {
-	// 	eMsg := "error in api.access.CountWorkersIdea"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-	// 	return
-	// }
+	numOfIdeas, err := api.access.CountWorkersIdea(ctx, ID)
+	if err != nil {
+		eMsg := "error in api.access.CountWorkersIdea"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
 
-	// if numOfIdeas > 0 {
-	// 	eMsg := "worker has some ideas"
-	// 	clog.WithError(err).Error(eMsg)
-	// 	err = errs.NewHttpErrorForbidden(errs.ERR_WORKER_HAS_IDEA)
-	// 	return
-	// }
+	if numOfIdeas > 0 {
+		eMsg := "worker has some ideas"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_WORKER_HAS_IDEA)
+		return
+	}
 
 	err = api.access.WorkerDelete(ctx, ID)
 	if err != nil {
