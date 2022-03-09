@@ -20,65 +20,6 @@ import (
 
 //GENRE
 
-func (api *APIController) GenreUpdate(
-	ctx context.Context,
-	GenreUpdate models.GenreUpdate,
-) (item *string, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method": "api.GenreUpdate",
-	})
-
-	genreList, err := api.access.GenreList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.GenreUpsert"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	var oldExist, newExist bool = false, false
-
-	for i := 0; i < len(*genreList); i++ {
-		if (*genreList)[i] == GenreUpdate.OldGenre {
-			oldExist = true
-		}
-		if (*genreList)[i] == GenreUpdate.NewGenre {
-			newExist = true
-		}
-
-	}
-
-	if !oldExist {
-		eMsg := "Genre not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
-		return
-	}
-
-	if GenreUpdate.OldGenre == GenreUpdate.NewGenre {
-		item = &GenreUpdate.NewGenre
-		return
-	}
-
-	if newExist {
-		eMsg := "Genre is already in use"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_GENRE)
-		return
-	}
-
-	err = api.access.GenreUpdate(ctx, GenreUpdate)
-	if err != nil {
-		eMsg := "error in api.access.GenreUpdate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	item = &GenreUpdate.NewGenre
-	return
-}
-
 //MECHANICS
 
 func (api *APIController) MechanicUpdate(
@@ -646,6 +587,65 @@ func (api *APIController) GenreDelete(
 		return
 	}
 
+	return
+}
+
+func (api *APIController) GenreUpdate(
+	ctx context.Context,
+	GenreUpdate models.GenreUpdate,
+) (item *string, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.GenreUpdate",
+	})
+
+	genreList, err := api.access.GenreList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.GenreUpsert"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	var oldExist, newExist bool = false, false
+
+	for i := 0; i < len(*genreList); i++ {
+		if (*genreList)[i] == GenreUpdate.OldGenre {
+			oldExist = true
+		}
+		if (*genreList)[i] == GenreUpdate.NewGenre {
+			newExist = true
+		}
+
+	}
+
+	if !oldExist {
+		eMsg := "Genre not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_GENRE)
+		return
+	}
+
+	if GenreUpdate.OldGenre == GenreUpdate.NewGenre {
+		item = &GenreUpdate.NewGenre
+		return
+	}
+
+	if newExist {
+		eMsg := "Genre is already in use"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_GENRE)
+		return
+	}
+
+	err = api.access.GenreUpdate(ctx, GenreUpdate)
+	if err != nil {
+		eMsg := "error in api.access.GenreUpdate"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	item = &GenreUpdate.NewGenre
 	return
 }
 

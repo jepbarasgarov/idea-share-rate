@@ -65,39 +65,6 @@ const (
 
 // GENRE
 
-func (d *PgAccess) GenreUpdate(
-	ctx context.Context,
-	GenreUpdate models.GenreUpdate,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.GenreUpdate",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		_, err = conn.Exec(ctx, sqlUpdateGenreName, GenreUpdate.NewGenre, GenreUpdate.OldGenre)
-		if err != nil {
-			eMsg := "error in sqlUpdateGenreName"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		_, err = conn.Exec(ctx, sqlUpdateAllGenreNamesIdea, GenreUpdate.NewGenre, GenreUpdate.OldGenre)
-		if err != nil {
-			eMsg := "error in sqlUpdateAllGenreNamesIdea"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 // MECHANICS
 
 func (d *PgAccess) MechanicUpdate(
@@ -766,6 +733,47 @@ func (d *MgAccess) GenreDelete(
 	_, err = coll.DeleteOne(ctx, bson.M{"name": GenreName})
 	if err != nil {
 		eMsg := "Error in genre delete"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	return
+}
+
+func (d *MgAccess) GenreUpdate(
+	ctx context.Context,
+	GenreUpdate models.GenreUpdate,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.GenreUpdate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	collGenre := db.Collection("genre")
+	collIdea := db.Collection("idea")
+
+	filterGenre := bson.M{"name": GenreUpdate.OldGenre}
+	updateGenre := bson.M{"$set": bson.M{"name": GenreUpdate.NewGenre}}
+
+	_, err = collGenre.UpdateOne(ctx, filterGenre, updateGenre)
+	if err != nil {
+		eMsg := "Error in genre update"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	filterIdea := bson.M{"genre": GenreUpdate.OldGenre}
+	updateIdea := bson.M{"$set": bson.M{"genre": GenreUpdate.NewGenre}}
+
+	_, err = collIdea.UpdateMany(ctx, filterIdea, updateIdea)
+	if err != nil {
+		eMsg := "Error in genre update from idea"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
