@@ -98,26 +98,27 @@ func (d *MgAccess) IdeaList(
 		x = append(x, bson.E{"genre", *Filter.Genre})
 	}
 
-	// if Filter.BeginDate != nil {
-	// 	dateCompareBegin := bson.E{"date", bson.E{"$gt", *Filter.BeginDate}}
-	// 	x = append(x, dateCompareBegin)
-	// }
+	if Filter.BeginDate != nil {
+		dateCompareBegin := bson.E{"date", bson.M{"$gte": *Filter.BeginDate}}
+		x = append(x, dateCompareBegin)
+	}
 
-	// if Filter.EndDate != nil {
-	// 	dateCompareEnd := bson.E{"date", bson.E{"$lte", *Filter.EndDate}}
-	// 	x = append(x, dateCompareEnd)
+	if Filter.EndDate != nil {
+		dateCompareEnd := bson.E{"date", bson.M{"$lte": *Filter.EndDate}}
+		x = append(x, dateCompareEnd)
 
-	// }
+	}
 
-	// if Filter.Mechanics != nil {
-	// 	mechSearch := bson.E{"mechanics", bson.E{"$all", *Filter.Mechanics}}
-	// 	x = append(x, mechSearch)
-	// }
+	if Filter.Mechanics != nil {
+		mechSearch := bson.E{"mechanics", bson.M{"$all": *Filter.Mechanics}}
+		x = append(x, mechSearch)
+	}
 
-	//TODO : begin, end we mechanic boyunca filter gos
-	matchStage := bson.D{{"$match", x}}
-	unWindStags := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
-	projectStage := bson.D{{"$project", bson.D{
+	//TODO : name boyunca ilike etdir
+
+	matchStageList := bson.D{{"$match", x}}
+	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", true}}}}
+	projectStageLIst := bson.D{{"$project", bson.D{
 		{"_id", 1},
 		{"name", 1},
 		{"worker", 1},
@@ -128,7 +129,7 @@ func (d *MgAccess) IdeaList(
 		{"is_it_new", bson.M{"$ne": bson.A{"$rates.user_id", Filter.UserID}}},
 		{"rate", "$rates.rate"},
 	}}}
-	groupStage := bson.D{{"$group", bson.D{
+	groupStageList := bson.D{{"$group", bson.D{
 		{"_id", "$_id"},
 		{"name", bson.M{"$first": "$name"}},
 		{"worker", bson.M{"$first": "$worker"}},
@@ -140,24 +141,24 @@ func (d *MgAccess) IdeaList(
 		{"avg", bson.M{"$avg": "$rate"}},
 	}}}
 
-	var sortStage bson.D
-	sortStage = bson.D{{"$sort", bson.D{{"is_it_new", -1}, {"create_ts", 1}}}}
+	var sortStageList bson.D
+	sortStageList = bson.D{{"$sort", bson.D{{"is_it_new", -1}, {"create_ts", 1}}}}
 
 	if Filter.Condition != nil {
 		if *Filter.Condition == responses.RatedIdea {
-			sortStage = bson.D{{"$sort", bson.M{"is_it_new": 1}}}
+			sortStageList = bson.D{{"$sort", bson.M{"is_it_new": 1}}}
 		}
 	}
 
-	limitStage := bson.D{{"$limit", Filter.Limit}}
-	offsetStage := bson.D{{"$skip", Filter.Offset}}
+	limitStageList := bson.D{{"$limit", Filter.Limit}}
+	offsetStageList := bson.D{{"$skip", Filter.Offset}}
 
 	db := client.Database("idea-share")
 	coll := db.Collection("idea")
 
-	cursorIdeaLits, err := coll.Aggregate(ctx, mongo.Pipeline{matchStage, unWindStags, projectStage, groupStage, sortStage, offsetStage, limitStage})
+	cursorIdeaLits, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, unWindStagsList, projectStageLIst, groupStageList, sortStageList, offsetStageList, limitStageList})
 	if err != nil {
-		eMsg := "Error in Find"
+		eMsg := "Error in cursorIdeaLits"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
@@ -193,9 +194,9 @@ func (d *MgAccess) IdeaList(
 
 	var total []bson.M
 
-	cursorIdeaCount, err := coll.Aggregate(ctx, mongo.Pipeline{matchStage, groupStageCount, projectStageCount})
+	cursorIdeaCount, err := coll.Aggregate(ctx, mongo.Pipeline{matchStageList, groupStageCount, projectStageCount})
 	if err != nil {
-		eMsg := "Error in Find"
+		eMsg := "Error in cursorIdeaCount"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
@@ -208,7 +209,38 @@ func (d *MgAccess) IdeaList(
 		}
 	}
 
-	item.Total = int(total[0]["total"].(int32))
+	if len(total) > 0 {
+		item.Total = int(total[0]["total"].(int32))
+	}
+
+	if Filter.WorkerID != nil {
+		matchStageSubmit := bson.D{{"$match", bson.M{"worker._id": *Filter.WorkerID}}}
+		sortStageSubmit := bson.D{{"$sort", bson.M{"create_ts": -1}}}
+		limitStageSubmit := bson.D{{"$limit", 1}}
+		projectStageSubmit := bson.D{{"$project", bson.D{{"create_ts", 1}, {"_id", 0}}}}
+		cursorGetLastSubmitOfWorker, err1 := coll.Aggregate(ctx, mongo.Pipeline{matchStageSubmit, sortStageSubmit, limitStageSubmit, projectStageSubmit})
+		if err1 != nil {
+			eMsg := "Error in cursorGetLastSubmitOfWorker"
+			clog.WithError(err1).Error(eMsg)
+			return
+		}
+
+		var lastSubmit []bson.M
+
+		for cursorGetLastSubmitOfWorker.Next(ctx) {
+			if err = cursorGetLastSubmitOfWorker.All(ctx, &lastSubmit); err != nil {
+				eMsg := "Error in reading cursorGetLastSubmitOfWorker"
+				clog.WithError(err).Error(eMsg)
+				return
+			}
+		}
+
+		if len(lastSubmit) > 0 {
+			item.LastSubmitted = lastSubmit[0]["create_ts"].(primitive.DateTime).Time().UTC()
+
+		}
+
+	}
 
 	return
 }

@@ -36,8 +36,8 @@ type IdeaFilter struct {
 	Name      *string
 	Genre     *string
 	Mechanics *[]string
-	BeginDate *string
-	EndDate   *string
+	BeginDate *primitive.DateTime
+	EndDate   *primitive.DateTime
 	Condition *responses.IdeaCondition
 	Limit     int
 	Offset    int

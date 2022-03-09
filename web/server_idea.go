@@ -71,14 +71,14 @@ func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 
 	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
 	if err == nil && !dateStart.IsZero() {
-		d := r.FormValue("start")
-		Filter.BeginDate = &d
+		begin := primitive.NewDateTimeFromTime(dateStart)
+		Filter.BeginDate = &begin
 	}
 
 	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
 	if err == nil && !dateEnd.IsZero() {
-		d := r.FormValue("end")
-		Filter.BeginDate = &d
+		end := primitive.NewDateTimeFromTime(dateEnd)
+		Filter.EndDate = &end
 	}
 
 	if len(r.FormValue("genre")) != 0 {
@@ -243,14 +243,14 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 
 	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
 	if err == nil && !dateStart.IsZero() {
-		d := r.FormValue("start")
-		Filter.BeginDate = &d
+		start := primitive.NewDateTimeFromTime(dateStart)
+		Filter.BeginDate = &start
 	}
 
 	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
 	if err == nil && !dateEnd.IsZero() {
-		d := r.FormValue("end")
-		Filter.BeginDate = &d
+		end := primitive.NewDateTimeFromTime(dateEnd)
+		Filter.EndDate = &end
 	}
 
 	if len(r.FormValue("genre")) != 0 {
