@@ -431,6 +431,7 @@ func (d *MgAccess) IdeaGet(
 			if crtrs[i].ID != item.CriteriaRates[j].ID {
 				unequal++
 			} else {
+				item.CriteriaRates[j].Name = crtrs[i].Name
 				break
 			}
 		}
@@ -1016,20 +1017,18 @@ func (d *MgAccess) CriteriaUpdate(
 
 	}
 	db := client.Database("idea-share")
-	coll := db.Collection("criteria")
+	collCriteria := db.Collection("criteria")
 
 	filter := bson.M{"_id": criter.ID}
 	update := bson.M{"$set": bson.M{"name": criter.Name}}
 
-	_, err = coll.UpdateOne(ctx, filter, update)
+	_, err = collCriteria.UpdateOne(ctx, filter, update)
 	if err != nil {
 		eMsg := "error in Update criteria"
 		clog.WithError(err).Error(eMsg)
 		err = errors.Wrap(err, eMsg)
 		return
 	}
-
-	// TODO: idealaryn icinden hem update et
 
 	if err != nil {
 		eMsg := "Error in d.runQuery()"

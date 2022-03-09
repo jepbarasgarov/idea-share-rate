@@ -110,10 +110,10 @@ type MechanicUpdate struct {
 ////////////////////////////////////////////////////////////////////////BSON///////////////////////////////////////////////////////////////
 
 type RatingStructInIdea struct {
-	CriteriaID    primitive.ObjectID `bson:"criteria_id"`
-	CrieteriaName string             `bson:"criteria_name"`
-	UserID        primitive.ObjectID `bson:"user_id"`
-	Rate          int                `bson:"rate"`
+	CriteriaID    primitive.ObjectID `bson:"criteria_id,omitempty"`
+	CrieteriaName string             `bson:"criteria_name,omitempty"`
+	UserID        primitive.ObjectID `bson:"user_id,omitempty"`
+	Rate          int                `bson:"rate,omitempty"`
 }
 
 type ArrayOfRatesIdea struct {

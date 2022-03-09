@@ -197,7 +197,6 @@ func (api *APIController) IdeaRate(
 		return
 	}
 
-	Rating.Rating.CrieteriaName = criter.Name
 	Rating.Rating.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
 
 	item, err = api.access.IdeaRate(ctx, Rating)
