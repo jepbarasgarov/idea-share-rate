@@ -14,69 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// func (s *Server) HandleAdminUpdatePassword(w http.ResponseWriter, r *http.Request) {
-// 	handleName := "HandleAdminUpdatePassword"
-
-// 	ctx := r.Context()
-// 	ipAddress, err := helpers.GetIP(r)
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"remote-addr": ipAddress,
-// 		"uri":         r.RequestURI,
-// 	})
-
-// 	requestLang := helpers.GetRequestLang(r)
-
-// 	if err != nil {
-// 		eMsg := "couldn't get ip address"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	roles := []responses.UserRole{
-// 		responses.UserRoleAdmin,
-// 	}
-
-// 	cu, err := s.UserRequirments(ctx, w, r, roles)
-// 	if err != nil {
-// 		eMsg := "UserRequirments error in " + handleName
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	id, err := uuid.FromString(mux.Vars(r)["id"])
-// 	if err != nil {
-// 		eMsg := "userID is not compatible"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	newPassword := r.FormValue("password")
-// 	if !helpers.IsPasswordValid(newPassword) {
-// 		eMsg := "password is not compatible"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	err = s.c.AdminUpdatePassword(ctx, cu, id.String(), newPassword)
-// 	if err != nil {
-// 		eMsg := "error in s.c.AdminUpdatePassword"
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	err = responses.ErrOK
-// 	errs.SendResponse(w, err, nil, clog, cu.Language)
-// 	clog.Info(handleName + " success")
-// }
-
 // func (s *Server) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 // 	handleName := "HandleUserDelete"
 
@@ -540,6 +477,69 @@ func (s *Server) HandleUserUpdateOwnPassword(w http.ResponseWriter, r *http.Requ
 	err = s.c.UserUpdateOwnPassword(ctx, cu, oldPassword, newPassword)
 	if err != nil {
 		eMsg := "error in s.c.UserUpdateOwnPassword"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, cu.Language)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleAdminUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleAdminUpdatePassword"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		eMsg := "userID is not compatible"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	newPassword := r.FormValue("password")
+	if !helpers.IsPasswordValid(newPassword) {
+		eMsg := "password is not compatible"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = s.c.AdminUpdatePassword(ctx, cu, id, newPassword)
+	if err != nil {
+		eMsg := "error in s.c.AdminUpdatePassword"
 		clog.WithError(err).Error(eMsg)
 		errs.SendResponse(w, err, nil, clog, cu.Language)
 		return

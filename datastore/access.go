@@ -40,7 +40,7 @@ type Access interface {
 	AdminUpdatePassword(
 		ctx context.Context,
 		cu *responses.ActionInfo,
-		id string,
+		userid primitive.ObjectID,
 		newPassword string,
 	) (err error)
 

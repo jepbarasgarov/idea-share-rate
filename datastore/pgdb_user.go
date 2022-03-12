@@ -47,35 +47,6 @@ const (
 	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
 )
 
-func (d *PgAccess) AdminUpdatePassword(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	userid string,
-	newPassword string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.AdminUpdatePassword",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		_, err = conn.Exec(ctx, sqlUpdateUserPassword, newPassword, time.Now().UTC(), userid)
-		if err != nil {
-			eMsg := "error in sqlUpdateUserPassword"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return nil
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) UserDelete(
 	ctx context.Context,
 	id string,
@@ -307,6 +278,41 @@ func (d *MgAccess) UserUpdateOwnPassword(
 	workerColl := db.Collection("user")
 
 	filterUser := bson.M{"_id": cu.ID}
+
+	updateUser := bson.M{"$set": bson.M{
+		"password": newPassword,
+	}}
+
+	_, err = workerColl.UpdateOne(ctx, filterUser, updateUser)
+	if err != nil {
+		eMsg := "error in Updating user's password"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	return
+}
+
+func (d *MgAccess) AdminUpdatePassword(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	userid primitive.ObjectID,
+	newPassword string,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.AdminUpdatePassword",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	workerColl := db.Collection("user")
+
+	filterUser := bson.M{"_id": userid}
 
 	updateUser := bson.M{"$set": bson.M{
 		"password": newPassword,

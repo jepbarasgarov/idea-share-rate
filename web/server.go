@@ -36,7 +36,7 @@ func NewRouter(s *Server) *mux.Router {
 	r.HandleFunc("/api/v1/user/create", s.HandleUserCreate).Methods("POST")
 	r.HandleFunc("/api/v1/user/update", s.HandleUserUpdate).Methods("POST")
 	r.HandleFunc("/api/v1/user/own/change-password", s.HandleUserUpdateOwnPassword).Methods("POST")
-	// r.HandleFunc("/api/v1/user/change-password/{id}", s.HandleAdminUpdatePassword).Methods("POST")
+	r.HandleFunc("/api/v1/user/change-password/{id}", s.HandleAdminUpdatePassword).Methods("POST")
 	r.HandleFunc("/api/v1/user/get/{id}", s.HandleUserGet).Methods("POST")
 	r.HandleFunc("/api/v1/user/autocomplete/list", s.HandleUserAutocomleteList).Methods("POST")
 	// r.HandleFunc("/api/v1/user/delete/{id}", s.HandleUserDelete).Methods("POST")
