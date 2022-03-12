@@ -34,8 +34,8 @@ type Access interface {
 
 	UserGetByID(
 		ctx context.Context,
-		id string,
-	) (item *models.UserSpecData, err error)
+		id primitive.ObjectID,
+	) (item *models.UserSpecDataBson, err error)
 
 	AdminUpdatePassword(
 		ctx context.Context,

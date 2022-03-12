@@ -54,7 +54,7 @@ type Tokens struct {
 /////////////////MONGO/////////////////////////////////////////
 
 type UserSpecDataBson struct {
-	ID             primitive.ObjectID   `bson:"id" json:"id"`
+	ID             primitive.ObjectID   `bson:"_id" json:"id"`
 	Username       string               `bson:"username" json:"username"`
 	Firstname      string               `bson:"firstname" json:"firstname"`
 	Lastname       string               `bson:"lastname" json:"lastname"`

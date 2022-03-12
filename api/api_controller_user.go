@@ -10,6 +10,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -170,151 +171,151 @@ func (api *APIController) UserUpdateOwnPassword(
 	return nil
 }
 
-func (api *APIController) AdminUpdatePassword(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	id string,
-	password string,
-) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.AdminUpdatePassword",
-		"username": cu.Username,
-	})
+// func (api *APIController) AdminUpdatePassword(
+// 	ctx context.Context,
+// 	cu *responses.ActionInfo,
+// 	id string,
+// 	password string,
+// ) (err error) {
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"method":   "api.AdminUpdatePassword",
+// 		"username": cu.Username,
+// 	})
 
-	user, err := api.access.UserGetByID(ctx, id)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	if user == nil {
-		eMsg := "user is not found"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
-		return
-	}
-	if user.ID == cu.ID {
-		eMsg := "you can't update own password"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorForbidden(errs.ERR_FB_ownpwrd_USER)
-		return
-	}
-	pwdHashBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		eMsg := "error in bcrypt.GenerateFromPassword"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	user, err := api.access.UserGetByID(ctx, id)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserGetByID"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
+// 	if user == nil {
+// 		eMsg := "user is not found"
+// 		clog.Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+// 		return
+// 	}
+// 	if user.ID == cu.ID {
+// 		eMsg := "you can't update own password"
+// 		clog.Error(eMsg)
+// 		err = errs.NewHttpErrorForbidden(errs.ERR_FB_ownpwrd_USER)
+// 		return
+// 	}
+// 	pwdHashBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+// 	if err != nil {
+// 		eMsg := "error in bcrypt.GenerateFromPassword"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	pwdHash := string(pwdHashBytes)
+// 	pwdHash := string(pwdHashBytes)
 
-	err = api.access.AdminUpdatePassword(ctx, cu, id, pwdHash)
-	if err != nil {
-		eMsg := "error in api.access.AdminUpdatePassword"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	err = api.access.AdminUpdatePassword(ctx, cu, id, pwdHash)
+// 	if err != nil {
+// 		eMsg := "error in api.access.AdminUpdatePassword"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (api *APIController) UserUpdate(
-	ctx context.Context,
-	user *models.UserUpdate,
-) (item *models.UserSpecData, err error) {
+// func (api *APIController) UserUpdate(
+// 	ctx context.Context,
+// 	user *models.UserUpdate,
+// ) (item *models.UserSpecData, err error) {
 
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserUpdate",
-		"username": user.Username,
-	})
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"method":   "api.UserUpdate",
+// 		"username": user.Username,
+// 	})
 
-	oldUserData, err := api.access.UserGetByID(ctx, user.ID)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	oldUserData, err := api.access.UserGetByID(ctx, user.ID)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserGetByID"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if oldUserData == nil {
-		eMsg := "user not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
-		return
-	}
+// 	if oldUserData == nil {
+// 		eMsg := "user not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+// 		return
+// 	}
 
-	usr, err := api.access.UserGetByUsername(ctx, user.Username)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByUsername"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	usr, err := api.access.UserGetByUsername(ctx, user.Username)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserGetByUsername"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	if usr != nil && usr.ID != user.ID {
-		eMsg := "Username is in use"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_USER)
-		return
-	}
+// 	if usr != nil && usr.ID != user.ID {
+// 		eMsg := "Username is in use"
+// 		clog.Error(eMsg)
+// 		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_USER)
+// 		return
+// 	}
 
-	item, err = api.access.UserUpdate(
-		ctx,
-		nil,
-		user,
-	)
-	if err != nil {
-		eMsg := "error in api.access.UserUpdate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	item, err = api.access.UserUpdate(
+// 		ctx,
+// 		nil,
+// 		user,
+// 	)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserUpdate"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	return
-}
+// 	return
+// }
 
-func (api *APIController) UserDelete(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	id string,
-) (err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserDelete",
-		"username": cu.Username,
-	})
+// func (api *APIController) UserDelete(
+// 	ctx context.Context,
+// 	cu *responses.ActionInfo,
+// 	id string,
+// ) (err error) {
+// 	clog := log.WithContext(ctx).WithFields(log.Fields{
+// 		"method":   "api.UserDelete",
+// 		"username": cu.Username,
+// 	})
 
-	user, err := api.access.UserGetByID(ctx, id)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	if user == nil {
-		eMsg := "user is not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
-		return
-	}
-	if cu.ID == id {
-		eMsg := "you can't delete yourself"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorForbidden(errs.ERR_FB_delete_USER)
-		return
-	}
-	err = api.access.UserDelete(ctx, id)
-	if err != nil {
-		eMsg := "error in api.access.UserDelete"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
+// 	user, err := api.access.UserGetByID(ctx, id)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserGetByID"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
+// 	if user == nil {
+// 		eMsg := "user is not found"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+// 		return
+// 	}
+// 	if cu.ID == id {
+// 		eMsg := "you can't delete yourself"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorForbidden(errs.ERR_FB_delete_USER)
+// 		return
+// 	}
+// 	err = api.access.UserDelete(ctx, id)
+// 	if err != nil {
+// 		eMsg := "error in api.access.UserDelete"
+// 		clog.WithError(err).Error(eMsg)
+// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+// 		return
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // GET
 
@@ -333,32 +334,6 @@ func (api *APIController) UserGetByUsername(ctx context.Context, username string
 		return
 	}
 
-	return
-}
-
-func (api *APIController) UserGet(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-	ID string,
-) (item *models.UserSpecData, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserGet",
-		"username": cu.Username,
-	})
-	item, err = api.access.UserGetByID(ctx, ID)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByID"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if item == nil {
-		eMsg := "user is not found"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
-		return
-	}
 	return
 }
 
@@ -508,5 +483,33 @@ func (api *APIController) UserCreate(
 		return
 	}
 
+	return
+}
+
+//GET
+
+func (api *APIController) UserGet(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	ID primitive.ObjectID,
+) (item *models.UserSpecDataBson, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserGet",
+		"username": cu.Username,
+	})
+	item, err = api.access.UserGetByID(ctx, ID)
+	if err != nil {
+		eMsg := "error in api.access.UserGetByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if item == nil {
+		eMsg := "user is not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+		return
+	}
 	return
 }

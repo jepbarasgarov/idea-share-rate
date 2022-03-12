@@ -225,55 +225,6 @@ func (d *PgAccess) UserGetPasswordByID(
 	return
 }
 
-func (d *PgAccess) UserGetByID(
-	ctx context.Context,
-	id string,
-) (item *models.UserSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserGetByID",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-		item = &models.UserSpecData{}
-
-		row := conn.QueryRow(ctx, sqlUserGetByID, id)
-		item = &models.UserSpecData{}
-		err = row.Scan(
-			&item.Username,
-			&item.Firstname,
-			&item.Lastname,
-			&item.Role,
-			&item.Status,
-		)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = nil
-				item = nil
-				return
-			}
-			eMsg := "error in sqlUserGetByID"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item.ID = id
-		return
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) UserAutocompleteList(
 	ctx context.Context,
 ) (item *[]models.UserLightData, err error) {
@@ -419,6 +370,49 @@ func (d *MgAccess) UserCreate(
 		Role:      user.Role,
 		Status:    responses.Active,
 	}
+
+	return
+}
+
+//GET
+
+func (d *MgAccess) UserGetByID(
+	ctx context.Context,
+	id primitive.ObjectID,
+) (item *models.UserSpecDataBson, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserGetByID",
+	})
+
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("user")
+
+	var u models.UserSpecDataBson
+	err = coll.FindOne(ctx, bson.M{"_id": id}).Decode(&u)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = nil
+			item = nil
+			return
+		}
+		eMsg := "Error in Find user with ID"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	u.HashedPassword = ""
+
+	item = &u
 
 	return
 }
