@@ -56,7 +56,7 @@ type Access interface {
 
 	UserAutocompleteList(
 		ctx context.Context,
-	) (item *[]models.UserLightData, err error)
+	) (item *[]models.UserLightDataBson, err error)
 
 	///////////////////////////////////////////////////////////////-----------WORKER
 	WorkerAutocompleteList(

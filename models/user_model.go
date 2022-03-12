@@ -62,3 +62,10 @@ type UserSpecDataBson struct {
 	Role           responses.UserRole   `bson:"role" json:"role"`
 	Status         responses.UserStatus `bson:"status" json:"status"`
 }
+
+type UserLightDataBson struct {
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	Firstname string             `bson:"firstname" json:"firstname"`
+	Lastname  string             `bson:"lastname" json:"lastname"`
+	Role      responses.UserRole `bson:"role" json:"role"`
+}

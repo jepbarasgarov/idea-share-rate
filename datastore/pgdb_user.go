@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,56 +45,6 @@ const (
 	sqlDeleteUser                     = `DELETE FROM tbl_user WHERE id = $1`
 	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
 )
-
-///GET
-
-func (d *PgAccess) UserAutocompleteList(
-	ctx context.Context,
-) (item *[]models.UserLightData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserAutocompleteList",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		users := make([]models.UserLightData, 0)
-		rows, err := conn.Query(ctx, sqlUserAutocompleteList, responses.Blocked)
-		if err != nil {
-			eMsg := "error in sqlUserAutocompleteList"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		for rows.Next() {
-			user := models.UserLightData{}
-			err = rows.Scan(
-				&user.ID,
-				&user.Role,
-				&user.Firstname,
-				&user.Lastname,
-			)
-			if err != nil {
-				eMsg := "error in scanning sqlUserAutocompleteList"
-				clog.WithError(err).Error(eMsg)
-				err = errors.Wrap(err, eMsg)
-				return
-			}
-			users = append(users, user)
-		}
-		item = &users
-		return
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 //////////////////////////////////////////////////////////////////////MONGO/////////////////////////////////////////////////////////////////////////////////
 
@@ -408,6 +357,48 @@ func (d *MgAccess) UserGetPasswordByID(
 	}
 
 	pwdHash = u["password"].(string)
+
+	return
+}
+
+func (d *MgAccess) UserAutocompleteList(
+	ctx context.Context,
+) (item *[]models.UserLightDataBson, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserAutocompleteList",
+	})
+
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("user")
+
+	options := options.Find()
+	options.Projection = bson.M{"firstname": 1, "lastname": 1, "role": 1}
+
+	cursor, err := coll.Find(ctx, bson.M{}, options)
+	if err != nil {
+		eMsg := "Error in Find user list"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+	var users []models.UserLightDataBson
+
+	if err = cursor.All(ctx, &users); err != nil {
+		eMsg := "Error in reading cursor"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	item = &users
 
 	return
 }

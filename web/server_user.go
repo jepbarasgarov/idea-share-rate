@@ -14,65 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-/// GET
-
-func (s *Server) HandleUserAutocomleteList(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleUserAutocomleteList"
-
-	ctx := r.Context()
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	roles := []responses.UserRole{
-		responses.UserRoleAdmin,
-		responses.UserRoleUser,
-	}
-
-	cu, err := s.UserRequirments(ctx, w, r, roles)
-	if err != nil {
-		eMsg := "UserRequirments error in " + handleName
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	data, err := s.c.UserAutocompleteList(ctx, cu)
-	if err != nil {
-		eMsg := "error in s.c.UserList"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, cu.Language)
-		return
-	}
-
-	Resp := make([]responses.UserLightData, 0)
-	for _, us := range *data {
-		respUser := responses.UserLightData{
-			ID:        us.ID,
-			Role:      us.Role,
-			Firstname: us.Firstname,
-			Lastname:  us.Lastname,
-		}
-		Resp = append(Resp, respUser)
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Resp, clog, cu.Language)
-	clog.Info(handleName + " success")
-}
-
 //////////////////////////////////MONGO/////////////////////////////////////////////////////////////////////
 
 func (s *Server) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
@@ -595,6 +536,52 @@ func (s *Server) HandleUserGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := s.c.UserGet(ctx, cu, ID)
+	if err != nil {
+		eMsg := "error in s.c.UserList"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, cu.Language)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleUserAutocomleteList(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserAutocomleteList"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+		responses.UserRoleUser,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	data, err := s.c.UserAutocompleteList(ctx, cu)
 	if err != nil {
 		eMsg := "error in s.c.UserList"
 		clog.WithError(err).Error(eMsg)

@@ -14,27 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// GET
-
-func (api *APIController) UserAutocompleteList(
-	ctx context.Context,
-	cu *responses.ActionInfo,
-) (item *[]models.UserLightData, err error) {
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserAutocompleteList",
-		"username": cu.Username,
-	})
-
-	item, err = api.access.UserAutocompleteList(ctx)
-	if err != nil {
-		eMsg := "error in api.access.UserAutocompleteList"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	return
-}
-
 ////////////////////////////////////////////////////////////////////////////////MONGO////////////////////////////////////////////////////////////////////////////////////
 
 func (api *APIController) UserLogin(
@@ -489,6 +468,25 @@ func (api *APIController) UserGet(
 		eMsg := "user is not found"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+		return
+	}
+	return
+}
+
+func (api *APIController) UserAutocompleteList(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+) (item *[]models.UserLightDataBson, err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserAutocompleteList",
+		"username": cu.Username,
+	})
+
+	item, err = api.access.UserAutocompleteList(ctx)
+	if err != nil {
+		eMsg := "error in api.access.UserAutocompleteList"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
 	return
