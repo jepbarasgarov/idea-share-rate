@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"belli/onki-game-ideas-mongo-backend/helpers"
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
@@ -99,56 +98,6 @@ func (d *PgAccess) AdminUpdatePassword(
 		return nil
 	})
 
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
-func (d *PgAccess) UserUpdate(
-	ctx context.Context,
-	pTx pgx.Tx,
-	user *models.UserUpdate,
-) (item *models.UserSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserUpdate",
-	})
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		_, err = conn.Exec(
-			ctx,
-			sqlUpdateUser,
-			user.Username,
-			user.Firstname,
-			user.Lastname,
-			user.Role,
-			user.Status,
-			user.ID,
-		)
-		if err != nil {
-			eMsg := "error occurred on sqlUpdateUser"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		item = &models.UserSpecData{
-			ID:        user.ID,
-			Username:  user.Username,
-			Firstname: user.Firstname,
-			Lastname:  user.Lastname,
-			Role:      user.Role,
-			Status:    user.Status,
-		}
-
-		return nil
-	})
 	if err != nil {
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
@@ -278,7 +227,7 @@ func (d *PgAccess) UserAutocompleteList(
 func (d *MgAccess) UserGetByUsername(
 	ctx context.Context,
 	username string,
-) (item *models.UserSpecData, err error) {
+) (item *models.UserSpecDataBson, err error) {
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.UserGetByUsername",
 	})
@@ -288,7 +237,7 @@ func (d *MgAccess) UserGetByUsername(
 			item = nil
 		}
 	}()
-	item = &models.UserSpecData{}
+	item = &models.UserSpecDataBson{}
 
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
@@ -299,7 +248,7 @@ func (d *MgAccess) UserGetByUsername(
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
-	var u bson.M
+	var u models.UserSpecDataBson
 	err = coll.FindOne(ctx, bson.M{"username": username}).Decode(&u)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -310,17 +259,7 @@ func (d *MgAccess) UserGetByUsername(
 		eMsg := "Error in FindOne"
 		clog.WithError(err).Error(eMsg)
 	}
-
-	item.Firstname = u["firstname"].(string)
-	item.Lastname = u["lastname"].(string)
-	item.Username = username
-	item.HashedPassword = u["password"].(string)
-	role := u["role"].(string)
-	item.Role, _ = helpers.ConvertStringToUserRole(role)
-	status := u["status"].(string)
-	item.Status, _ = helpers.ConvertStringToUserStatus(status)
-	item.ID = u["_id"].(primitive.ObjectID).Hex()
-
+	item = &u
 	return
 }
 
@@ -369,6 +308,53 @@ func (d *MgAccess) UserCreate(
 		Username:  user.Username,
 		Role:      user.Role,
 		Status:    responses.Active,
+	}
+
+	return
+}
+
+func (d *MgAccess) UserUpdate(
+	ctx context.Context,
+	user *models.UserUpdate,
+) (item *models.UserSpecDataBson, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserUpdate",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	workerColl := db.Collection("user")
+
+	filterUser := bson.M{"_id": user.ID}
+
+	updateUser := bson.M{"$set": bson.M{
+		"firstname": user.Firstname,
+		"lastname":  user.Lastname,
+		"username":  user.Username,
+		"role":      user.Role,
+		"status":    user.Status,
+		"update_ts": time.Now().UTC(),
+	}}
+
+	_, err = workerColl.UpdateOne(ctx, filterUser, updateUser)
+	if err != nil {
+		eMsg := "error in Updating user"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	item = &models.UserSpecDataBson{
+		ID:        user.ID,
+		Firstname: user.Firstname,
+		Lastname:  user.Lastname,
+		Username:  user.Username,
+		Role:      user.Role,
+		Status:    user.Status,
 	}
 
 	return

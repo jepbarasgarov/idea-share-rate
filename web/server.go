@@ -32,9 +32,9 @@ func NewRouter(s *Server) *mux.Router {
 
 	// User //
 	r.HandleFunc("/api/v1/user/login", s.HandleUserLogin).Methods("POST")
-	r.HandleFunc("/api/v1/user/token", s.HandleUserGiveToken).Methods("POST")
+	// r.HandleFunc("/api/v1/user/token", s.HandleUserGiveToken).Methods("POST")
 	r.HandleFunc("/api/v1/user/create", s.HandleUserCreate).Methods("POST")
-	// r.HandleFunc("/api/v1/user/update", s.HandleUserUpdate).Methods("POST")
+	r.HandleFunc("/api/v1/user/update", s.HandleUserUpdate).Methods("POST")
 	// r.HandleFunc("/api/v1/user/own/change-password", s.HandleUserUpdateOwnPassword).Methods("POST")
 	// r.HandleFunc("/api/v1/user/change-password/{id}", s.HandleAdminUpdatePassword).Methods("POST")
 	r.HandleFunc("/api/v1/user/get/{id}", s.HandleUserGet).Methods("POST")

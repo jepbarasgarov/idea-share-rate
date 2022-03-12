@@ -197,7 +197,7 @@ func (api *APIController) IdeaRate(
 		return
 	}
 
-	Rating.Rating.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+	Rating.Rating.UserID = cu.ID
 
 	item, err = api.access.IdeaRate(ctx, Rating)
 	if err != nil {

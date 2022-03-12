@@ -14,7 +14,7 @@ type Access interface {
 	UserGetByUsername(
 		ctx context.Context,
 		username string,
-	) (item *models.UserSpecData, err error)
+	) (item *models.UserSpecDataBson, err error)
 
 	UserCreate(
 		ctx context.Context,
@@ -46,9 +46,8 @@ type Access interface {
 
 	UserUpdate(
 		ctx context.Context,
-		pTx pgx.Tx,
 		user *models.UserUpdate,
-	) (item *models.UserSpecData, err error)
+	) (item *models.UserSpecDataBson, err error)
 
 	UserDelete(
 		ctx context.Context,

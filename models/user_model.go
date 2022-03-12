@@ -6,24 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UserCreate struct {
-	Username  string
-	Firstname string
-	Lastname  string
-	Password  string
-	Role      responses.UserRole
-}
-
-type UserUpdate struct {
-	ID        string
-	Username  string
-	Firstname string
-	Lastname  string
-	Password  string
-	Role      responses.UserRole
-	Status    responses.UserStatus
-}
-
 type UserSpecData struct {
 	ID             string
 	Username       string
@@ -52,6 +34,24 @@ type Tokens struct {
 }
 
 /////////////////MONGO/////////////////////////////////////////
+
+type UserCreate struct {
+	Username  string
+	Firstname string
+	Lastname  string
+	Password  string
+	Role      responses.UserRole
+}
+
+type UserUpdate struct {
+	ID        primitive.ObjectID
+	Username  string
+	Firstname string
+	Lastname  string
+	Password  string
+	Role      responses.UserRole
+	Status    responses.UserStatus
+}
 
 type UserSpecDataBson struct {
 	ID             primitive.ObjectID   `bson:"_id" json:"id"`

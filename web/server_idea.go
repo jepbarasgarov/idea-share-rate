@@ -297,7 +297,7 @@ func (s *Server) HandleIdeaList(w http.ResponseWriter, r *http.Request) {
 
 	var Filter models.IdeaFilter
 
-	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+	Filter.UserID = cu.ID
 
 	if len(r.FormValue("name")) != 0 {
 		name := r.FormValue("name")
@@ -449,7 +449,7 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var Filter models.IdeaFilter
-	Filter.UserID, _ = primitive.ObjectIDFromHex(cu.ID)
+	Filter.UserID = cu.ID
 
 	if len(r.FormValue("name")) != 0 {
 		name := r.FormValue("name")

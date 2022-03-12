@@ -1,5 +1,7 @@
 package responses
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type UserRole string
 
 const (
@@ -25,24 +27,24 @@ type Tokens struct {
 }
 
 type ActionInfo struct {
-	ID        string     `json:"id"`
-	Username  string     `json:"username"`
-	Firstname string     `json:"firstname"`
-	Lastname  string     `json:"lastname"`
-	Role      UserRole   `json:"role"`
-	Status    UserStatus `json:"status"`
-	Language  Lang       `json:"language"`
+	ID        primitive.ObjectID `json:"id"`
+	Username  string             `json:"username"`
+	Firstname string             `json:"firstname"`
+	Lastname  string             `json:"lastname"`
+	Role      UserRole           `json:"role"`
+	Status    UserStatus         `json:"status"`
+	Language  Lang               `json:"language"`
 }
 
 type UserLogin struct {
-	ID           string     `json:"id"`
-	Username     string     `json:"username"`
-	Firstname    string     `json:"firstname"`
-	Lastname     string     `json:"lastname"`
-	Role         UserRole   `json:"role"`
-	Status       UserStatus `json:"status"`
-	AccessToken  string     `json:"access_token"`
-	RefreshToken string     `json:"refresh_token"`
+	ID           primitive.ObjectID `json:"id"`
+	Username     string             `json:"username"`
+	Firstname    string             `json:"firstname"`
+	Lastname     string             `json:"lastname"`
+	Role         UserRole           `json:"role"`
+	Status       UserStatus         `json:"status"`
+	AccessToken  string             `json:"access_token"`
+	RefreshToken string             `json:"refresh_token"`
 }
 
 type UserSpecData struct {

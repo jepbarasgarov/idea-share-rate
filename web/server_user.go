@@ -1,23 +1,22 @@
 package web
 
 import (
-	"belli/onki-game-ideas-mongo-backend/config"
 	"belli/onki-game-ideas-mongo-backend/errs"
 	"belli/onki-game-ideas-mongo-backend/helpers"
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// func (s *Server) HandleUserUpdate(w http.ResponseWriter, r *http.Request) {
-// 	handleName := "HandleUserUpdate"
+// func (s *Server) HandleUserGiveToken(w http.ResponseWriter, r *http.Request) {
+// 	handleName := "HandleUserGiveToken"
 
 // 	ctx := r.Context()
+
 // 	ipAddress, err := helpers.GetIP(r)
 // 	clog := log.WithContext(ctx).WithFields(log.Fields{
 // 		"remote-addr": ipAddress,
@@ -34,152 +33,34 @@ import (
 // 		return
 // 	}
 
-// 	roles := []responses.UserRole{
-// 		responses.UserRoleAdmin,
+// 	refreshToken := r.FormValue("refresh_token")
+// 	token := r.Header.Get("Authorization")
+
+// 	if !strings.HasPrefix(token, "Bearer ") {
+// 		clog.Error("User is not logged in")
+// 		err := errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+// 		errs.SendResponse(w, err, nil, clog, requestLang)
 // 	}
-// 	cu, err := s.UserRequirments(ctx, w, r, roles)
+
+// 	username, _ := helpers.VerifyAccessToken(token[7:], config.Conf.Jwt.Secret)
+
+// 	data, err := s.c.UserGiveAccessToken(ctx, username, refreshToken)
 // 	if err != nil {
-// 		eMsg := "UserRequirments error in " + handleName
+// 		eMsg := "error in s.c.UserGiveAccessToken"
 // 		clog.WithError(err).Error(eMsg)
 // 		errs.SendResponse(w, err, nil, clog, requestLang)
 // 		return
 // 	}
 
-// 	var user models.UserUpdate
-
-// 	_, err = uuid.FromString(r.FormValue("id"))
-// 	if err != nil {
-// 		eMsg := "invalid user ID"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-// 	user.ID = r.FormValue("id")
-
-// 	user.Username = r.FormValue("username")
-// 	if len(user.Username) == 0 || len(user.Username) > 32 {
-// 		eMsg := "username length is not compatible"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
+// 	Response := responses.Tokens{
+// 		AccessToken:  data.AccessToken,
+// 		RefreshToken: data.RefreshToken,
 // 	}
 
-// 	user.Firstname = r.FormValue("firstname")
-// 	if len(user.Firstname) == 0 || len(user.Firstname) > 32 {
-// 		eMsg := "firstname length is not compatible"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	user.Lastname = r.FormValue("lastname")
-// 	if len(user.Lastname) == 0 || len(user.Lastname) > 32 {
-// 		eMsg := "lastname length is not compatible"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	user.Status, err = helpers.ConvertStringToUserStatus(r.FormValue("status"))
-// 	if err != nil {
-// 		eMsg := "error in helpers.ConvertStringToUserStatus"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	user.Role, err = helpers.ConvertStringToUserRole(r.FormValue("role"))
-// 	if err != nil {
-// 		eMsg := "error in helpers.ConvertStringToUserRole(role)"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-// 	if user.ID == cu.ID {
-// 		eMsg := "You are not allowed to change your own data here"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorForbidden(errs.ERR_FB_owndata_USER)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	data, err := s.c.UserUpdate(ctx, &user)
-// 	if err != nil {
-// 		eMsg := "error in s.c.UserUpdate"
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	Resp := responses.UserSpecData{
-// 		ID:        data.ID,
-// 		Username:  data.Username,
-// 		Firstname: data.Firstname,
-// 		Lastname:  data.Lastname,
-// 		Role:      data.Role,
-// 		Status:    data.Status,
-// 	}
 // 	err = responses.ErrOK
-// 	errs.SendResponse(w, err, Resp, clog, cu.Language)
-
+// 	errs.SendResponse(w, err, Response, clog, requestLang)
 // 	clog.Info(handleName + " success")
 // }
-
-func (s *Server) HandleUserGiveToken(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleUserGiveToken"
-
-	ctx := r.Context()
-
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	requestLang := helpers.GetRequestLang(r)
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	refreshToken := r.FormValue("refresh_token")
-	token := r.Header.Get("Authorization")
-
-	if !strings.HasPrefix(token, "Bearer ") {
-		clog.Error("User is not logged in")
-		err := errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-	}
-
-	username, _ := helpers.VerifyAccessToken(token[7:], config.Conf.Jwt.Secret)
-
-	data, err := s.c.UserGiveAccessToken(ctx, username, refreshToken)
-	if err != nil {
-		eMsg := "error in s.c.UserGiveAccessToken"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Response := responses.Tokens{
-		AccessToken:  data.AccessToken,
-		RefreshToken: data.RefreshToken,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Response, clog, requestLang)
-	clog.Info(handleName + " success")
-}
 
 // func (s *Server) HandleUserUpdateOwnPassword(w http.ResponseWriter, r *http.Request) {
 // 	handleName := "HandleUserUpdateOwnPassword"
@@ -548,6 +429,114 @@ func (s *Server) HandleUserCreate(w http.ResponseWriter, r *http.Request) {
 	data, err := s.c.UserCreate(ctx, &user, password, cu)
 	if err != nil {
 		eMsg := "error in s.c.UserCreate()"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, data, clog, cu.Language)
+
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleUserUpdate(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserUpdate"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	var user models.UserUpdate
+
+	user.ID, err = primitive.ObjectIDFromHex(r.FormValue("id"))
+	if err != nil {
+		eMsg := "invalid user ID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	user.Username = r.FormValue("username")
+	if len(user.Username) == 0 || len(user.Username) > 32 {
+		eMsg := "username length is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	user.Firstname = r.FormValue("firstname")
+	if len(user.Firstname) == 0 || len(user.Firstname) > 32 {
+		eMsg := "firstname length is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	user.Lastname = r.FormValue("lastname")
+	if len(user.Lastname) == 0 || len(user.Lastname) > 32 {
+		eMsg := "lastname length is not compatible"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	user.Status, err = helpers.ConvertStringToUserStatus(r.FormValue("status"))
+	if err != nil {
+		eMsg := "error in helpers.ConvertStringToUserStatus"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	user.Role, err = helpers.ConvertStringToUserRole(r.FormValue("role"))
+	if err != nil {
+		eMsg := "error in helpers.ConvertStringToUserRole(role)"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+	if user.ID == cu.ID {
+		eMsg := "You are not allowed to change your own data here"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_FB_owndata_USER)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	data, err := s.c.UserUpdate(ctx, &user)
+	if err != nil {
+		eMsg := "error in s.c.UserUpdate"
 		clog.WithError(err).Error(eMsg)
 		errs.SendResponse(w, err, nil, clog, cu.Language)
 		return

@@ -352,7 +352,7 @@ func (d *MgAccess) IdeaGet(
 	for i := 0; i < len(item.CriteriaRates); i++ {
 		totalRate += item.CriteriaRates[i].Rate
 		rateNum++
-		if item.CriteriaRates[i].UserID.Hex() == cu.ID {
+		if *item.CriteriaRates[i].UserID == cu.ID {
 			item.CriteriaRates[i].UserID = nil
 			usersOwnRates = append(usersOwnRates, item.CriteriaRates[i])
 			isItNewToUser = false
