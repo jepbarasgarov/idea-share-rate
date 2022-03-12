@@ -3,11 +3,13 @@ package datastore
 import (
 	"belli/onki-game-ideas-mongo-backend/config"
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -117,6 +119,7 @@ func (d *PgAccess) runQuery(ctx context.Context, clog *log.Entry, f pgxQuery) (e
 type MgAccess struct {
 	Access
 	ClientOptions *options.ClientOptions
+	client        *mongo.Client
 }
 
 func NewMgAccess(conf *config.Config) (mg *MgAccess, err error) {
@@ -127,6 +130,13 @@ func NewMgAccess(conf *config.Config) (mg *MgAccess, err error) {
 		err = errors.Wrap(err, eMsg)
 		return
 	}
-	mg = &MgAccess{ClientOptions: clientOptions}
+
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	mg = &MgAccess{ClientOptions: clientOptions, client: client}
 	return
 }

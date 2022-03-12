@@ -4,7 +4,6 @@ import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -29,17 +28,7 @@ func (d *MgAccess) IdeaCreate(
 		"method": "PgAccess.IdeaCreate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("idea")
 
 	rates := make([]models.RatingStructInIdea, 0)
@@ -69,17 +58,7 @@ func (d *MgAccess) IdeaRate(
 		"method": "PgAccess.IdeaRate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("idea")
 
 	MatchStage := bson.M{"_id": Rating.IdeaID}
@@ -149,17 +128,7 @@ func (d *MgAccess) IdeaList(
 	item = &models.IdeaList{}
 	item.Result = make([]models.IdeaLightData, 0)
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("idea")
 
 	x := bson.D{}
@@ -333,16 +302,7 @@ func (d *MgAccess) IdeaGet(
 	})
 	item = &models.IdeaSpecData{}
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collIdea := db.Collection("idea")
 
 	err = collIdea.FindOne(ctx, bson.M{"_id": ID}).Decode(&item)
@@ -435,16 +395,7 @@ func (d *MgAccess) IdeaDelete(
 		"method": "PgAccess.IdeaDelete",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collIdea := db.Collection("idea")
 
 	_, err = collIdea.DeleteOne(ctx, bson.M{"_id": ID})
@@ -466,16 +417,7 @@ func (d *MgAccess) IdeaUpdate(
 		"method": "PgAccess.IdeaUpdate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collIdea := db.Collection("idea")
 
 	filter := bson.M{"_id": NewIdea.ID}
@@ -510,17 +452,7 @@ func (d *MgAccess) GenreUpsert(
 		"method": "PgAccess.GenreUpsert",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("genre")
 
 	filter := bson.M{"name": GenreName}
@@ -547,17 +479,7 @@ func (d *MgAccess) GenreList(
 
 	GENRES := make([]string, 0)
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("genre")
 
 	cursor, err := coll.Find(ctx, bson.M{})
@@ -598,16 +520,7 @@ func (d *MgAccess) GenreDelete(
 		"method": "PgAccess.GenreDelete",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("genre")
 
 	_, err = coll.DeleteOne(ctx, bson.M{"name": GenreName})
@@ -628,17 +541,7 @@ func (d *MgAccess) GenreUpdate(
 		"method": "PgAccess.GenreUpdate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collGenre := db.Collection("genre")
 	collIdea := db.Collection("idea")
 
@@ -674,16 +577,8 @@ func (d *MgAccess) MechanicUpsert(
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.MechanicUpsert",
 	})
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
 	filter := bson.M{"name": Mechanics}
@@ -713,17 +608,7 @@ func (d *MgAccess) MechanicList(
 	})
 	MECHS := make([]string, 0)
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
 	cursor, err := coll.Find(ctx, bson.M{})
@@ -764,16 +649,7 @@ func (d *MgAccess) MechanicDelete(
 		"method": "PgAccess.MechanicDelete",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
 	_, err = coll.DeleteOne(ctx, bson.M{"name": MechName})
@@ -798,16 +674,8 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 		"method": "PgAccess.CheckAllMechanicsArePresent",
 	})
 	item = false
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
 	groupStage := bson.D{{"$group", bson.D{{"_id", ""}, {"mechs", bson.D{{"$push", "$name"}}}}}}
@@ -845,16 +713,7 @@ func (d *MgAccess) MechanicUpdate(
 		"method": "PgAccess.MechanicUpdate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collMech := db.Collection("mechanic")
 	collIdea := db.Collection("idea")
 
@@ -897,24 +756,18 @@ func (d *MgAccess) CriteriaCreate(
 	ctx context.Context,
 	CriteriaName string,
 ) (item *models.CriteriaSpecData, err error) {
+
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.CriteriaCreate",
 	})
+
 	defer func() {
 		if err != nil {
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
 	row, err := coll.InsertOne(ctx, bson.D{
@@ -946,15 +799,8 @@ func (d *MgAccess) CriteriaGetByName(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+
+	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
 	var u bson.M
@@ -990,16 +836,8 @@ func (d *MgAccess) CriteriaGetByID(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
 
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
 	var u bson.M
@@ -1028,16 +866,8 @@ func (d *MgAccess) CriteriaUpdate(
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.CriteriaUpdate",
 	})
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collCriteria := db.Collection("criteria")
 
 	filter := bson.M{"_id": criter.ID}
@@ -1068,17 +898,7 @@ func (d *MgAccess) CriteriaList(
 
 	criterias := make([]models.CriteriaSpecData, 0)
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
 	cursor, err := coll.Find(ctx, bson.M{})
@@ -1118,16 +938,8 @@ func (d *MgAccess) CriteriaDelete(
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.CriteriaDelete",
 	})
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
 	_, err = coll.DeleteOne(ctx, bson.M{"_id": ID})
@@ -1149,19 +961,9 @@ func (d *MgAccess) CountCriteriaRates(
 		"method": "PgAccess.CountCriteriaRates",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
 	//TODO : su functiony goni idelan nacesinde bar dp sanap optimise etjek bol
 
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collIdea := db.Collection("idea")
 
 	unWindStagsList := bson.D{{"$unwind", bson.D{{"path", "$rates"}, {"preserveNullAndEmptyArrays", false}}}}

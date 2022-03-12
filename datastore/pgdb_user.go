@@ -4,7 +4,6 @@ import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -63,17 +62,7 @@ func (d *MgAccess) UserGetByUsername(
 	}()
 	item = &models.UserSpecDataBson{}
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	var u models.UserSpecDataBson
@@ -105,16 +94,8 @@ func (d *MgAccess) UserCreate(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	row, err := coll.InsertOne(ctx, bson.D{
@@ -153,15 +134,7 @@ func (d *MgAccess) UserUpdate(
 		"method": "PgAccess.UserUpdate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	workerColl := db.Collection("user")
 
 	filterUser := bson.M{"_id": user.ID}
@@ -204,15 +177,7 @@ func (d *MgAccess) UserUpdateOwnPassword(
 		"method": "PgAccess.UserGetByID",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	workerColl := db.Collection("user")
 
 	filterUser := bson.M{"_id": cu.ID}
@@ -242,15 +207,7 @@ func (d *MgAccess) AdminUpdatePassword(
 		"method": "PgAccess.AdminUpdatePassword",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	workerColl := db.Collection("user")
 
 	filterUser := bson.M{"_id": userid}
@@ -277,16 +234,8 @@ func (d *MgAccess) UserDelete(
 	clog := log.WithFields(log.Fields{
 		"method": "PgAccess.UserList",
 	})
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
 
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	_, err = coll.DeleteOne(ctx, bson.M{"_id": id})
@@ -315,15 +264,8 @@ func (d *MgAccess) UserGetByID(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	var u models.UserSpecDataBson
@@ -355,15 +297,7 @@ func (d *MgAccess) UserGetPasswordByID(
 		"method": "PgAccess.UserGetPasswordByID",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	options := options.FindOne()
@@ -399,15 +333,8 @@ func (d *MgAccess) UserAutocompleteList(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+
+	db := d.client.Database("idea-share")
 	coll := db.Collection("user")
 
 	options := options.Find()

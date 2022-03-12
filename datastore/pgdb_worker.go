@@ -3,7 +3,6 @@ package datastore
 import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -28,15 +27,8 @@ func (d *MgAccess) WorkerCreate(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+
+	db := d.client.Database("idea-share")
 	coll := db.Collection("worker")
 
 	row, err := coll.InsertOne(ctx, bson.D{
@@ -73,15 +65,8 @@ func (d *MgAccess) Workerget(
 			item = nil
 		}
 	}()
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+
+	db := d.client.Database("idea-share")
 	coll := db.Collection("worker")
 
 	var u models.WorkerBsonModelInIdea
@@ -110,16 +95,7 @@ func (d *MgAccess) WorkerDelete(
 		"method": "PgAccess.WorkerDelete",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("worker")
 
 	_, err = coll.DeleteOne(ctx, bson.M{"_id": ID})
@@ -140,15 +116,7 @@ func (d *MgAccess) WorkerUpdate(
 		"method": "PgAccess.WorkerUpdate",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	workerColl := db.Collection("worker")
 	ideaColl := db.Collection("idea")
 
@@ -191,17 +159,7 @@ func (d *MgAccess) WorkerAutocompleteList(
 		"method": "PgAccess.WorkerAutocompleteList",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("worker")
 
 	cursor, err := coll.Find(ctx, bson.M{})
@@ -231,17 +189,7 @@ func (d *MgAccess) CountWorkersIdea(
 		"method": "PgAccess.CountWorkersIdea",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	collIdea := db.Collection("idea")
 
 	projectStageLIst := bson.D{{"$project", bson.D{
@@ -287,17 +235,7 @@ func (d *MgAccess) PositionUpsert(
 		"method": "PgAccess.PositionUpsert",
 	})
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("position")
 
 	filter := bson.M{"name": PositionName}
@@ -324,17 +262,7 @@ func (d *MgAccess) PositionList(
 
 	positions := make([]string, 0)
 
-	client, err := mongo.Connect(ctx, d.ClientOptions)
-	if err != nil {
-		fmt.Println(err)
-		log.Fatal(err)
-
-	}
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
-
-	db := client.Database("idea-share")
+	db := d.client.Database("idea-share")
 	coll := db.Collection("position")
 
 	cursor, err := coll.Find(ctx, bson.M{})
