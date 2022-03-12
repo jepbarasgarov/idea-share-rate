@@ -16,52 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const (
-	sqlCreateIdea       = `INSERT INTO tbl_idea(name, worker_id, date, genre, mechanics, description) VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
-	sqlUpdateIdea       = `UPDATE tbl_idea SET name = $1, worker_id = $2, date = $3, genre = $4, mechanics =$5 , description = $6 WHERE id = $7`
-	sqlDeleteIdea       = `DELETE FROM tbl_idea WHERE id = $1`
-	sqlCreateLinkIdea   = `INSERT INTO tbl_link(label, link, idea_id) VALUES($1, $2, $3)`
-	sqlDeleteIdeaLinks  = `DELETE FROM tbl_link WHERE idea_id = $1`
-	sqlCreateSketchPath = `INSERT INTO tbl_sketch(name, idea_id, file_path, place) VALUES($1, $2, $3, $4)`
-	sqlGetIdeaList      = `SELECT idea.id, idea.name, idea.date, idea.description, idea.worker_id,  worker.firstname, worker.lastname, worker.position, sketch.file_path, userrel.mark FROM tbl_idea idea
-						   INNER JOIN tbl_worker worker ON idea.worker_id = worker.id
-						   LEFT JOIN tbl_sketch sketch ON idea.id = sketch.idea_id 
-						   LEFT JOIN tbl_user_idea_rel userrel ON userrel.user_id = $1 AND userrel.idea_id = idea.id
-						   WHERE (sketch.place = 1 OR sketch.place IS NULL)`
-	sqlSelectLastIdeaSubmittedDateWorker = `SELECT create_ts FROM tbl_idea WHERE worker_id = $1 ORDER BY create_ts DESC LIMIT 1 OFFSET 0`
-	sqlCountIdea                         = `SELECT COUNT(*) FROM tbl_idea WHERE 1 = $1 `
-	sqlGetOverAllRateIdea                = `SELECT COUNT(*) , COALESCE(SUM(rate), 0) FROM tbl_idea_rate WHERE idea_id = $1`
-	sqlGetIdeaByID                       = `SELECT idea.id, idea.name, idea.date, idea.description, idea.genre, idea.mechanics, idea.worker_id,  worker.firstname, worker.lastname, worker.position FROM tbl_idea idea 
- 	 						 INNER JOIN tbl_worker worker ON idea.worker_id = worker.id WHERE idea.id = $1`
-	sqlGetIdeaLinks         = `SELECT label, link FROM tbl_link WHERE idea_id = $1`
-	sqlGetIdeaSketchPaths   = `SELECT id, name, file_path FROM tbl_sketch WHERE idea_id = $1`
-	sqlGetRatesOfUserToIdea = `SELECT crit.id, crit.name ,rate.rate FROM tbl_criteria crit 
-							  LEFT JOIN tbl_idea_rate rate ON crit.id = rate.criteria_id AND rate.user_id = $1 AND rate.idea_id = $2`
-	sqlRateIdea          = `INSERT INTO tbl_idea_rate(idea_id, criteria_id, user_id, rate) VALUES($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT user_rate DO UPDATE SET rate = $4, update_ts = $5`
-	sqlUpsertIdeaUserRel = `INSERT INTO tbl_user_idea_rel(user_id, idea_id) VALUES($1, $2) ON CONFLICT ON CONSTRAINT user_idea_rel DO NOTHING`
-
-	sqlSelectGenresList        = `SELECT ARRAY(SELECT name FROM tbl_genre)`
-	sqlUpsertGenre             = `INSERT INTO tbl_genre(name) VALUES($1) ON CONFLICT ON CONSTRAINT genre_unique DO NOTHING`
-	sqlUpdateGenreName         = `UPDATE tbl_genre SET name = $1 WHERE name = $2`
-	sqlUpdateAllGenreNamesIdea = `UPDATE tbl_idea SET genre = $1 WHERE genre = $2`
-	sqlDeleteGenre             = `DELETE FROM tbl_genre WHERE name = $1`
-
-	sqlSelectMechanicssList       = `SELECT ARRAY(SELECT name FROM tbl_mechanic)`
-	sqlUpsertMechanic             = `INSERT INTO tbl_mechanic(name) VALUES ($1) ON CONFLICT ON CONSTRAINT mechanic_unique DO NOTHING`
-	sqlUpdateMechanic             = `UPDATE tbl_mechanic SET name = $1 WHERE name = $2`
-	sqlUpdateAllmechanicNamesIdea = `UPDATE tbl_idea SET mechanics = array_replace(mechanics , $1, $2)`
-	sqlCheckMechanicsArePresent   = `SELECT $1 <@ ARRAY(SELECT name FROM tbl_mechanic)`
-	sqlDeleteMechanic             = `DELETE FROM tbl_mechanic WHERE name = $1`
-
-	sqlgetCriteriaByName  = `SELECT id FROM tbl_criteria WHERE name = $1`
-	sqlgetCriteriaByID    = `SELECT id, name FROM tbl_criteria WHERE id = $1`
-	sqlCreateCriteria     = `INSERT INTO tbl_criteria(name) VALUES($1) RETURNING id`
-	sqlUpdateCriteria     = `UPDATE tbl_criteria SET name = $1, update_ts = $2 WHERE id = $3`
-	sqlCountCriteriaRates = `SELECT COUNT(*) FROM tbl_idea_rate WHERE criteria_id = $1`
-	sqlDeleteCriteria     = `DELETE FROM tbl_criteria WHERE id = $1`
-	sqlSelectcriteriaList = `SELECT id, name FROM tbl_criteria`
-)
-
 ///////////////////////////////////////////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////
 
 //IDEA

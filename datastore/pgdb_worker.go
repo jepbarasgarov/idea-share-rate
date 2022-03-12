@@ -13,18 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const (
-	sqlWorkerAutoCompleteList  = `SELECT id, firstname, lastname, position FROM tbl_worker`
-	sqlGetWorkerByID           = `SELECT id,  firstname, lastname, position FROM tbl_worker WHERE id = $1`
-	sqlCountIdeaNumberOfWorker = `SELECT COUNT(*) FROM tbl_idea WHERE worker_id = $1`
-	sqlCreateWorker            = `INSERT INTO tbl_worker(firstname, lastname, position) VALUES($1, $2, $3) RETURNING id`
-	sqlUpdateWorker            = `UPDATE tbl_worker SET firstname = $1 ,lastname = $2,  position = $3, update_ts = $4 WHERE id = $5`
-	sqlDeleteWorker            = `DELETE FROM tbl_worker WHERE id = $1`
-
-	sqlUpsertPosition     = `INSERT INTO tbl_position(name) VALUES($1) ON CONFLICT ON CONSTRAINT position_unique DO NOTHING`
-	sqlSelectPositionList = `SELECT ARRAY(SELECT name FROM tbl_position)`
-)
-
 //////////////////////////////////////////////////////MONGO///////////////////////////////////////////////////////////////////////////////////////////
 
 func (d *MgAccess) WorkerCreate(

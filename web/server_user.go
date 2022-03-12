@@ -131,64 +131,6 @@ func (s *Server) HandleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	clog.Info(handleName + " success")
 }
 
-func (s *Server) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
-	handleName := "HandleUserLogin"
-
-	ctx := r.Context()
-	requestLang := helpers.GetRequestLang(r)
-
-	ipAddress, err := helpers.GetIP(r)
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"remote-addr": ipAddress,
-		"uri":         r.RequestURI,
-	})
-
-	if err != nil {
-		eMsg := "couldn't get ip address"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-
-	m := make(map[string]string)
-	m["username"] = username
-	m["password"] = password
-
-	names, err1 := helpers.VerifyMinLen(m)
-	if err1 != nil {
-		eMsg := "len == 0 -- > " + names
-		clog.WithError(err1).Error(eMsg)
-		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-	data, tokens, err := s.c.UserLogin(ctx, username, password)
-	if err != nil {
-		eMsg := "error in s.c.UserLogin"
-		clog.WithError(err).Error(eMsg)
-		errs.SendResponse(w, err, nil, clog, requestLang)
-		return
-	}
-
-	Response := responses.UserLogin{
-		ID:           data.ID,
-		Username:     data.Username,
-		Firstname:    data.Firstname,
-		Lastname:     data.Lastname,
-		Role:         data.Role,
-		Status:       responses.Active,
-		AccessToken:  tokens.AccessToken,
-		RefreshToken: tokens.RefreshToken,
-	}
-
-	err = responses.ErrOK
-	errs.SendResponse(w, err, Response, clog, requestLang)
-	clog.Info(handleName + " success")
-}
-
 func (s *Server) HandleUserGiveToken(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleUserGiveToken"
 
@@ -626,5 +568,65 @@ func (s *Server) HandleUserAutocomleteList(w http.ResponseWriter, r *http.Reques
 
 	err = responses.ErrOK
 	errs.SendResponse(w, err, Resp, clog, cu.Language)
+	clog.Info(handleName + " success")
+}
+
+//////////////////////////////////MONGO/////////////////////////////////////////////////////////////////////
+
+func (s *Server) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserLogin"
+
+	ctx := r.Context()
+	requestLang := helpers.GetRequestLang(r)
+
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	m := make(map[string]string)
+	m["username"] = username
+	m["password"] = password
+
+	names, err1 := helpers.VerifyMinLen(m)
+	if err1 != nil {
+		eMsg := "len == 0 -- > " + names
+		clog.WithError(err1).Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	data, tokens, err := s.c.UserLogin(ctx, username, password)
+	if err != nil {
+		eMsg := "error in s.c.UserLogin"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Response := responses.UserLogin{
+		ID:           data.ID,
+		Username:     data.Username,
+		Firstname:    data.Firstname,
+		Lastname:     data.Lastname,
+		Role:         data.Role,
+		Status:       responses.Active,
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Response, clog, requestLang)
 	clog.Info(handleName + " success")
 }
