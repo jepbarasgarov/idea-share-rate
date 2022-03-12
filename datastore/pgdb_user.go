@@ -47,31 +47,6 @@ const (
 	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
 )
 
-func (d *PgAccess) UserDelete(
-	ctx context.Context,
-	id string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserList",
-	})
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		_, err = conn.Exec(ctx, sqlDeleteUser, id)
-		if err != nil {
-			eMsg := "error occurred on sqlDeleteUser"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		return nil
-	})
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 ///GET
 
 func (d *PgAccess) UserAutocompleteList(
@@ -327,6 +302,33 @@ func (d *MgAccess) AdminUpdatePassword(
 	}
 
 	return
+}
+
+func (d *MgAccess) UserDelete(
+	ctx context.Context,
+	id primitive.ObjectID,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserList",
+	})
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("user")
+
+	_, err = coll.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		eMsg := "Error in delete user"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	return
+
 }
 
 //GET

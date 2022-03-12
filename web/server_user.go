@@ -14,57 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// func (s *Server) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
-// 	handleName := "HandleUserDelete"
-
-// 	ctx := r.Context()
-// 	ipAddress, err := helpers.GetIP(r)
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"remote-addr": ipAddress,
-// 		"uri":         r.RequestURI,
-// 	})
-
-// 	requestLang := helpers.GetRequestLang(r)
-
-// 	if err != nil {
-// 		eMsg := "couldn't get ip address"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-// 	roles := []responses.UserRole{
-// 		responses.UserRoleAdmin,
-// 	}
-
-// 	cu, err := s.UserRequirments(ctx, w, r, roles)
-// 	if err != nil {
-// 		eMsg := "UserRequirments error in " + handleName
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	id, err := uuid.FromString(mux.Vars(r)["id"])
-// 	if err != nil {
-// 		eMsg := "user ID is not compatible"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-// 	err = s.c.UserDelete(ctx, cu, id.String())
-// 	if err != nil {
-// 		eMsg := "error in s.c.UserDelete"
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-// 	err = responses.ErrOK
-// 	errs.SendResponse(w, err, nil, clog, cu.Language)
-// 	clog.Info(handleName + " success")
-// }
-
 /// GET
 
 func (s *Server) HandleUserAutocomleteList(w http.ResponseWriter, r *http.Request) {
@@ -545,6 +494,57 @@ func (s *Server) HandleAdminUpdatePassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, cu.Language)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserDelete"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+	}
+
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		eMsg := "user ID is not compatible"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+	err = s.c.UserDelete(ctx, cu, id)
+	if err != nil {
+		eMsg := "error in s.c.UserDelete"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
 	err = responses.ErrOK
 	errs.SendResponse(w, err, nil, clog, cu.Language)
 	clog.Info(handleName + " success")

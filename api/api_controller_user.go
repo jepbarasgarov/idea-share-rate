@@ -14,46 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// func (api *APIController) UserDelete(
-// 	ctx context.Context,
-// 	cu *responses.ActionInfo,
-// 	id string,
-// ) (err error) {
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"method":   "api.UserDelete",
-// 		"username": cu.Username,
-// 	})
-
-// 	user, err := api.access.UserGetByID(ctx, id)
-// 	if err != nil {
-// 		eMsg := "error in api.access.UserGetByID"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-// 	if user == nil {
-// 		eMsg := "user is not found"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
-// 		return
-// 	}
-// 	if cu.ID == id {
-// 		eMsg := "you can't delete yourself"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorForbidden(errs.ERR_FB_delete_USER)
-// 		return
-// 	}
-// 	err = api.access.UserDelete(ctx, id)
-// 	if err != nil {
-// 		eMsg := "error in api.access.UserDelete"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	return nil
-// }
-
 // GET
 
 func (api *APIController) UserAutocompleteList(
@@ -458,6 +418,46 @@ func (api *APIController) AdminUpdatePassword(
 	err = api.access.AdminUpdatePassword(ctx, cu, id, pwdHash)
 	if err != nil {
 		eMsg := "error in api.access.AdminUpdatePassword"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	return nil
+}
+
+func (api *APIController) UserDelete(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	id primitive.ObjectID,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserDelete",
+		"username": cu.Username,
+	})
+
+	user, err := api.access.UserGetByID(ctx, id)
+	if err != nil {
+		eMsg := "error in api.access.UserGetByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	if user == nil {
+		eMsg := "user is not found"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
+		return
+	}
+	if cu.ID == id {
+		eMsg := "you can't delete yourself"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_FB_delete_USER)
+		return
+	}
+	err = api.access.UserDelete(ctx, id)
+	if err != nil {
+		eMsg := "error in api.access.UserDelete"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return

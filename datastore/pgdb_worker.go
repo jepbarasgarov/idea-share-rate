@@ -116,7 +116,7 @@ func (d *MgAccess) WorkerDelete(
 
 	_, err = coll.DeleteOne(ctx, bson.M{"_id": ID})
 	if err != nil {
-		eMsg := "Error in Find worker with ID"
+		eMsg := "Error in worker delete"
 		clog.WithError(err).Error(eMsg)
 		return
 	}

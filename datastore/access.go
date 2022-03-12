@@ -51,7 +51,7 @@ type Access interface {
 
 	UserDelete(
 		ctx context.Context,
-		id string,
+		id primitive.ObjectID,
 	) (err error)
 
 	UserAutocompleteList(
