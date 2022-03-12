@@ -35,6 +35,9 @@ func (d *MgAccess) IdeaCreate(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	coll := db.Collection("idea")
@@ -72,6 +75,9 @@ func (d *MgAccess) IdeaRate(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	coll := db.Collection("idea")
@@ -149,6 +155,9 @@ func (d *MgAccess) IdeaList(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	coll := db.Collection("idea")
@@ -329,6 +338,9 @@ func (d *MgAccess) IdeaGet(
 		fmt.Println(err)
 		log.Fatal(err)
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	collIdea := db.Collection("idea")
@@ -428,6 +440,9 @@ func (d *MgAccess) IdeaDelete(
 		fmt.Println(err)
 		log.Fatal(err)
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	collIdea := db.Collection("idea")
@@ -456,6 +471,9 @@ func (d *MgAccess) IdeaUpdate(
 		fmt.Println(err)
 		log.Fatal(err)
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	collIdea := db.Collection("idea")
@@ -498,6 +516,10 @@ func (d *MgAccess) GenreUpsert(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("genre")
 
@@ -524,12 +546,17 @@ func (d *MgAccess) GenreList(
 	})
 
 	GENRES := make([]string, 0)
+
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("genre")
 
@@ -559,6 +586,7 @@ func (d *MgAccess) GenreList(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+
 	return
 }
 
@@ -576,6 +604,9 @@ func (d *MgAccess) GenreDelete(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("genre")
 
@@ -603,6 +634,10 @@ func (d *MgAccess) GenreUpdate(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	collGenre := db.Collection("genre")
 	collIdea := db.Collection("idea")
@@ -645,6 +680,9 @@ func (d *MgAccess) MechanicUpsert(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
@@ -663,6 +701,7 @@ func (d *MgAccess) MechanicUpsert(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+
 	return
 }
 
@@ -673,12 +712,16 @@ func (d *MgAccess) MechanicList(
 		"method": "PgAccess.MechanicList",
 	})
 	MECHS := make([]string, 0)
+
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	coll := db.Collection("mechanic")
@@ -727,6 +770,9 @@ func (d *MgAccess) MechanicDelete(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
@@ -740,6 +786,7 @@ func (d *MgAccess) MechanicDelete(
 		eMsg := "Error in d.runQuery()"
 		clog.WithError(err).Error(eMsg)
 	}
+
 	return
 }
 
@@ -757,6 +804,9 @@ func (d *MgAccess) CheckAllMechanicsArePresent(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("mechanic")
 
@@ -801,6 +851,9 @@ func (d *MgAccess) MechanicUpdate(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	collMech := db.Collection("mechanic")
 	collIdea := db.Collection("idea")
@@ -858,6 +911,9 @@ func (d *MgAccess) CriteriaCreate(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
 
@@ -874,6 +930,7 @@ func (d *MgAccess) CriteriaCreate(
 		ID:   row.InsertedID.(primitive.ObjectID),
 		Name: CriteriaName,
 	}
+
 	return
 }
 
@@ -894,6 +951,9 @@ func (d *MgAccess) CriteriaGetByName(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
 
@@ -935,6 +995,10 @@ func (d *MgAccess) CriteriaGetByID(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
 
@@ -970,6 +1034,9 @@ func (d *MgAccess) CriteriaUpdate(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	collCriteria := db.Collection("criteria")
 
@@ -1000,12 +1067,17 @@ func (d *MgAccess) CriteriaList(
 	})
 
 	criterias := make([]models.CriteriaSpecData, 0)
+
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
 
@@ -1052,6 +1124,9 @@ func (d *MgAccess) CriteriaDelete(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("criteria")
 
@@ -1080,6 +1155,9 @@ func (d *MgAccess) CountCriteriaRates(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	//TODO : su functiony goni idelan nacesinde bar dp sanap optimise etjek bol
 

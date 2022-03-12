@@ -69,6 +69,10 @@ func (d *MgAccess) UserGetByUsername(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
@@ -84,6 +88,7 @@ func (d *MgAccess) UserGetByUsername(
 		clog.WithError(err).Error(eMsg)
 	}
 	item = &u
+
 	return
 }
 
@@ -106,6 +111,9 @@ func (d *MgAccess) UserCreate(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
@@ -150,6 +158,9 @@ func (d *MgAccess) UserUpdate(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	workerColl := db.Collection("user")
 
@@ -198,6 +209,9 @@ func (d *MgAccess) UserUpdateOwnPassword(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	workerColl := db.Collection("user")
 
@@ -233,6 +247,9 @@ func (d *MgAccess) AdminUpdatePassword(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	workerColl := db.Collection("user")
 
@@ -266,6 +283,9 @@ func (d *MgAccess) UserDelete(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
@@ -300,6 +320,9 @@ func (d *MgAccess) UserGetByID(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
@@ -337,6 +360,9 @@ func (d *MgAccess) UserGetPasswordByID(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 
@@ -378,6 +404,9 @@ func (d *MgAccess) UserAutocompleteList(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("user")
 

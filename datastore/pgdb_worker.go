@@ -32,8 +32,10 @@ func (d *MgAccess) WorkerCreate(
 	if err != nil {
 		fmt.Println(err)
 		return
-
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
@@ -76,6 +78,9 @@ func (d *MgAccess) Workerget(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
@@ -111,6 +116,9 @@ func (d *MgAccess) WorkerDelete(
 		return
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
@@ -137,6 +145,9 @@ func (d *MgAccess) WorkerUpdate(
 		fmt.Println(err)
 		return
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 	db := client.Database("idea-share")
 	workerColl := db.Collection("worker")
 	ideaColl := db.Collection("idea")
@@ -186,6 +197,10 @@ func (d *MgAccess) WorkerAutocompleteList(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("worker")
 
@@ -222,6 +237,9 @@ func (d *MgAccess) CountWorkersIdea(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	db := client.Database("idea-share")
 	collIdea := db.Collection("idea")
@@ -275,6 +293,10 @@ func (d *MgAccess) PositionUpsert(
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("position")
 
@@ -301,12 +323,17 @@ func (d *MgAccess) PositionList(
 	})
 
 	positions := make([]string, 0)
+
 	client, err := mongo.Connect(ctx, d.ClientOptions)
 	if err != nil {
 		fmt.Println(err)
 		log.Fatal(err)
 
 	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
+
 	db := client.Database("idea-share")
 	coll := db.Collection("position")
 
