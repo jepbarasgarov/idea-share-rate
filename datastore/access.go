@@ -18,9 +18,8 @@ type Access interface {
 
 	UserCreate(
 		ctx context.Context,
-		pTx pgx.Tx,
 		user *models.UserCreate,
-	) (item *models.UserSpecData, err error)
+	) (item *models.UserSpecDataBson, err error)
 
 	UserGetPasswordByID(
 		ctx context.Context,

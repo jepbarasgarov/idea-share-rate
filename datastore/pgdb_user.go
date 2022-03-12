@@ -48,62 +48,6 @@ const (
 	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
 )
 
-func (d *PgAccess) UserCreate(
-	ctx context.Context,
-	pTx pgx.Tx,
-	user *models.UserCreate,
-) (item *models.UserSpecData, err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserCreate",
-	})
-
-	err = d.runInTx(ctx, pTx, clog, func(tx pgx.Tx) (rollback bool, err error) {
-
-		rollback = true
-
-		defer func() {
-			if err != nil {
-				item = nil
-			}
-		}()
-
-		var id string
-		row := tx.QueryRow(
-			ctx,
-			sqlUserCreate,
-			user.Username,
-			user.Password,
-			user.Firstname,
-			user.Lastname,
-			responses.Active,
-			user.Role,
-		)
-		err = row.Scan(&id)
-		if err != nil {
-			eMsg := "An error occurred on sqlUserCreate"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-		item = &models.UserSpecData{
-			ID:        id,
-			Username:  user.Username,
-			Firstname: user.Firstname,
-			Lastname:  user.Lastname,
-			Role:      user.Role,
-			Status:    responses.Active,
-		}
-
-		return false, nil
-	})
-
-	if err != nil {
-		eMsg := "An error occurred on d.runInTx()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
-
 func (d *PgAccess) UserUpdateOwnPassword(
 	ctx context.Context,
 	ai *responses.ActionInfo,
@@ -425,6 +369,56 @@ func (d *MgAccess) UserGetByUsername(
 	status := u["status"].(string)
 	item.Status, _ = helpers.ConvertStringToUserStatus(status)
 	item.ID = u["_id"].(primitive.ObjectID).Hex()
+
+	return
+}
+
+func (d *MgAccess) UserCreate(
+	ctx context.Context,
+	user *models.UserCreate,
+) (item *models.UserSpecDataBson, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "MgAccess.UserCreate",
+	})
+
+	defer func() {
+		if err != nil {
+			item = nil
+		}
+	}()
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("user")
+
+	row, err := coll.InsertOne(ctx, bson.D{
+		{Key: "firstname", Value: user.Firstname},
+		{Key: "lastname", Value: user.Lastname},
+		{Key: "username", Value: user.Username},
+		{Key: "role", Value: user.Role},
+		{Key: "status", Value: responses.Active},
+		{Key: "password", Value: user.Password},
+		{Key: "create_ts", Value: time.Now().UTC()},
+		{Key: "update_ts", Value: time.Now().UTC()},
+	})
+	if err != nil {
+		eMsg := "An error occurred on Insert one"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	item = &models.UserSpecDataBson{
+		ID:        row.InsertedID.(primitive.ObjectID),
+		Firstname: user.Firstname,
+		Lastname:  user.Lastname,
+		Username:  user.Username,
+		Role:      user.Role,
+		Status:    responses.Active,
+	}
 
 	return
 }

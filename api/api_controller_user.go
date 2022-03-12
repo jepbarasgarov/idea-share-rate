@@ -116,53 +116,6 @@ func (api *APIController) UserGiveAccessToken(
 	return
 }
 
-func (api *APIController) UserCreate(
-	ctx context.Context,
-	user *models.UserCreate,
-	password string,
-	cu *responses.ActionInfo,
-) (item *models.UserSpecData, err error) {
-
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserCreate",
-		"username": cu.Username,
-	})
-
-	usr, err := api.access.UserGetByUsername(ctx, user.Username)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByUsername"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	if usr != nil {
-		eMsg := "Username is in use"
-		clog.Error(eMsg)
-		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_USER)
-		return
-	}
-
-	pwdHashBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		eMsg := "error in bcrypt.GenerateFromPassword"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-	user.Password = string(pwdHashBytes)
-
-	item, err = api.access.UserCreate(ctx, nil, user)
-	if err != nil {
-		eMsg := "error in api.access.UserCreate"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 func (api *APIController) UserUpdateOwnPassword(
 	ctx context.Context,
 	cu *responses.ActionInfo,
@@ -503,6 +456,53 @@ func (api *APIController) UserLogin(
 	)
 	if err != nil {
 		eMsg := "error in api.cache.TokenSetWithExpiry"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	return
+}
+
+func (api *APIController) UserCreate(
+	ctx context.Context,
+	user *models.UserCreate,
+	password string,
+	cu *responses.ActionInfo,
+) (item *models.UserSpecDataBson, err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserCreate",
+		"username": cu.Username,
+	})
+
+	usr, err := api.access.UserGetByUsername(ctx, user.Username)
+	if err != nil {
+		eMsg := "error in api.access.UserGetByUsername"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if usr != nil {
+		eMsg := "Username is in use"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorConflict(errs.ERR_UNIQUE_USER)
+		return
+	}
+
+	pwdHashBytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	if err != nil {
+		eMsg := "error in bcrypt.GenerateFromPassword"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	user.Password = string(pwdHashBytes)
+
+	item, err = api.access.UserCreate(ctx, user)
+	if err != nil {
+		eMsg := "error in api.access.UserCreate"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
