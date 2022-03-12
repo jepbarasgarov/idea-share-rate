@@ -1,66 +1,18 @@
 package web
 
 import (
+	"belli/onki-game-ideas-mongo-backend/config"
 	"belli/onki-game-ideas-mongo-backend/errs"
 	"belli/onki-game-ideas-mongo-backend/helpers"
 	"belli/onki-game-ideas-mongo-backend/models"
 	"belli/onki-game-ideas-mongo-backend/responses"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-// func (s *Server) HandleUserGiveToken(w http.ResponseWriter, r *http.Request) {
-// 	handleName := "HandleUserGiveToken"
-
-// 	ctx := r.Context()
-
-// 	ipAddress, err := helpers.GetIP(r)
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"remote-addr": ipAddress,
-// 		"uri":         r.RequestURI,
-// 	})
-
-// 	requestLang := helpers.GetRequestLang(r)
-
-// 	if err != nil {
-// 		eMsg := "couldn't get ip address"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	refreshToken := r.FormValue("refresh_token")
-// 	token := r.Header.Get("Authorization")
-
-// 	if !strings.HasPrefix(token, "Bearer ") {
-// 		clog.Error("User is not logged in")
-// 		err := errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 	}
-
-// 	username, _ := helpers.VerifyAccessToken(token[7:], config.Conf.Jwt.Secret)
-
-// 	data, err := s.c.UserGiveAccessToken(ctx, username, refreshToken)
-// 	if err != nil {
-// 		eMsg := "error in s.c.UserGiveAccessToken"
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	Response := responses.Tokens{
-// 		AccessToken:  data.AccessToken,
-// 		RefreshToken: data.RefreshToken,
-// 	}
-
-// 	err = responses.ErrOK
-// 	errs.SendResponse(w, err, Response, clog, requestLang)
-// 	clog.Info(handleName + " success")
-// }
 
 // func (s *Server) HandleUserUpdateOwnPassword(w http.ResponseWriter, r *http.Request) {
 // 	handleName := "HandleUserUpdateOwnPassword"
@@ -343,6 +295,56 @@ func (s *Server) HandleUserLogin(w http.ResponseWriter, r *http.Request) {
 		Status:       responses.Active,
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, Response, clog, requestLang)
+	clog.Info(handleName + " success")
+}
+
+func (s *Server) HandleUserGiveToken(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserGiveToken"
+
+	ctx := r.Context()
+
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	refreshToken := r.FormValue("refresh_token")
+	token := r.Header.Get("Authorization")
+
+	if !strings.HasPrefix(token, "Bearer ") {
+		clog.Error("User is not logged in")
+		err := errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+	}
+
+	username, _ := helpers.VerifyAccessToken(token[7:], config.Conf.Jwt.Secret)
+
+	data, err := s.c.UserGiveAccessToken(ctx, username, refreshToken)
+	if err != nil {
+		eMsg := "error in s.c.UserGiveAccessToken"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	Response := responses.Tokens{
+		AccessToken:  data.AccessToken,
+		RefreshToken: data.RefreshToken,
 	}
 
 	err = responses.ErrOK

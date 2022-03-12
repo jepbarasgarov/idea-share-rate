@@ -14,109 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// func (api *APIController) UserGiveAccessToken(
-// 	ctx context.Context,
-// 	username string,
-// 	refresh string,
-// ) (item *models.Tokens, err error) {
-
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"method": "api.UserGiveAccessToken",
-// 	})
-
-// 	Tokens := models.Tokens{}
-
-// 	if username == "<nil>" {
-// 		eMsg := "owner of request can't be determined"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		return
-// 	}
-// 	user, err := api.access.UserGetByUsername(ctx, username)
-// 	if err != nil {
-// 		eMsg := "error in api.access.UserGetByUsername"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if user == nil || user.Status == responses.Blocked {
-// 		eMsg := "owner of request can't be determined"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		return
-// 	}
-
-// 	userID, err := api.cache.GetUserIDByToken(ctx, refresh)
-// 	if err != nil {
-// 		eMsg := "can't get refreshToken from redis"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if userID == nil {
-// 		eMsg := "refresh token has expired"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		return
-// 	}
-
-// 	if user.ID != *userID {
-// 		eMsg := "refresh token is not yours"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		return
-// 	}
-
-// 	if user.Status == responses.Blocked {
-// 		eMsg := "user has been blocked"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
-// 		return
-// 	}
-
-// 	//----------AccessToken-------------------------
-// 	Tokens.AccessToken, err = helpers.GenerateAccessToken(
-// 		username,
-// 		config.Conf.Jwt.AccessTokenExpiry,
-// 		config.Conf.Jwt.Secret,
-// 	)
-// 	if err != nil {
-// 		eMsg := "Error at GenerateAccessToken"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	//----------RefreshToken------------------------
-// 	Tokens.RefreshToken, err = helpers.GenerateRefreshToken()
-// 	if err != nil {
-// 		eMsg := "Error at GenerateRefreshToken"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	err = api.cache.TokenSetWithExpiry(
-// 		ctx,
-// 		user.ID,
-// 		Tokens.RefreshToken,
-// 		time.Duration(config.Conf.Jwt.RefreshTokenExpiry)*time.Second,
-// 	)
-// 	if err != nil {
-// 		eMsg := "error in api.cache.TokenSetWithExpiry"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-// 	_ = api.cache.DeletePreviousRefreshToken(ctx, refresh)
-
-// 	item = &Tokens
-
-// 	return
-// }
-
 // func (api *APIController) UserUpdateOwnPassword(
 // 	ctx context.Context,
 // 	cu *responses.ActionInfo,
@@ -264,24 +161,6 @@ import (
 
 // GET
 
-func (api *APIController) UserGetByUsername(ctx context.Context, username string) (item *models.UserSpecDataBson, err error) {
-
-	clog := log.WithContext(ctx).WithFields(log.Fields{
-		"method":   "api.UserGetByUsername",
-		"username": username,
-	})
-
-	item, err = api.access.UserGetByUsername(ctx, username)
-	if err != nil {
-		eMsg := "error in api.access.UserGetByUsername"
-		clog.WithError(err).Error(eMsg)
-		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-		return
-	}
-
-	return
-}
-
 func (api *APIController) UserAutocompleteList(
 	ctx context.Context,
 	cu *responses.ActionInfo,
@@ -380,6 +259,111 @@ func (api *APIController) UserLogin(
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
+
+	return
+}
+
+func (api *APIController) UserGiveAccessToken(
+	ctx context.Context,
+	username string,
+	refresh string,
+) (item *models.Tokens, err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method": "api.UserGiveAccessToken",
+	})
+
+	Tokens := models.Tokens{}
+
+	if username == "<nil>" {
+		eMsg := "owner of request can't be determined"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		return
+	}
+	user, err := api.access.UserGetByUsername(ctx, username)
+	if err != nil {
+		eMsg := "error in api.access.UserGetByUsername"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if user == nil || user.Status == responses.Blocked {
+		eMsg := "owner of request can't be determined"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		return
+	}
+
+	userID, err := api.cache.GetUserIDByToken(ctx, refresh)
+	if err != nil {
+		eMsg := "can't get refreshToken from redis"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if userID == nil {
+		eMsg := "refresh token has expired"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		return
+	}
+
+	primitiveObjectIDForm, _ := primitive.ObjectIDFromHex(*userID)
+
+	if user.ID != primitiveObjectIDForm {
+		eMsg := "refresh token is not yours"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		return
+	}
+
+	if user.Status == responses.Blocked {
+		eMsg := "user has been blocked"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorUnauthorized(errs.ERR_UA)
+		return
+	}
+
+	//----------AccessToken-------------------------
+	Tokens.AccessToken, err = helpers.GenerateAccessToken(
+		username,
+		config.Conf.Jwt.AccessTokenExpiry,
+		config.Conf.Jwt.Secret,
+	)
+	if err != nil {
+		eMsg := "Error at GenerateAccessToken"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	//----------RefreshToken------------------------
+	Tokens.RefreshToken, err = helpers.GenerateRefreshToken()
+	if err != nil {
+		eMsg := "Error at GenerateRefreshToken"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	err = api.cache.TokenSetWithExpiry(
+		ctx,
+		user.ID.Hex(),
+		Tokens.RefreshToken,
+		time.Duration(config.Conf.Jwt.RefreshTokenExpiry)*time.Second,
+	)
+	if err != nil {
+		eMsg := "error in api.cache.TokenSetWithExpiry"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+	_ = api.cache.DeletePreviousRefreshToken(ctx, refresh)
+
+	item = &Tokens
 
 	return
 }
@@ -507,5 +491,23 @@ func (api *APIController) UserGet(
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_USER)
 		return
 	}
+	return
+}
+
+func (api *APIController) UserGetByUsername(ctx context.Context, username string) (item *models.UserSpecDataBson, err error) {
+
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserGetByUsername",
+		"username": username,
+	})
+
+	item, err = api.access.UserGetByUsername(ctx, username)
+	if err != nil {
+		eMsg := "error in api.access.UserGetByUsername"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
 	return
 }
