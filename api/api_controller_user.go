@@ -14,60 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// func (api *APIController) UserUpdateOwnPassword(
-// 	ctx context.Context,
-// 	cu *responses.ActionInfo,
-// 	oldPassword, newPassword string,
-// ) (err error) {
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"method":   "api.UserUpdateOwnPassword",
-// 		"username": cu.Username,
-// 	})
-
-// 	pwdHash, err := api.access.UserGetPasswordByID(ctx, cu.ID)
-// 	if err != nil {
-// 		eMsg := "error in api.access.UserGetPasswordByID"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	if pwdHash == "" {
-// 		eMsg := "password is not found"
-// 		clog.Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	err = bcrypt.CompareHashAndPassword([]byte(pwdHash), []byte(oldPassword))
-// 	if err != nil {
-// 		eMsg := "old password is not correct"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorForbidden(errs.ERR_FB_pwrd_USER)
-// 		return
-// 	}
-
-// 	newPwrdHashByte, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
-// 	if err != nil {
-// 		eMsg := "error in bcrypt.GenerateFromPassword"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	newPwrdHash := string(newPwrdHashByte)
-
-// 	err = api.access.UserUpdateOwnPassword(ctx, cu, newPwrdHash)
-// 	if err != nil {
-// 		eMsg := "error in api.access.UserUpdateOwnPassword"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		return
-// 	}
-
-// 	return nil
-// }
-
 // func (api *APIController) AdminUpdatePassword(
 // 	ctx context.Context,
 // 	cu *responses.ActionInfo,
@@ -464,6 +410,60 @@ func (api *APIController) UserUpdate(
 	}
 
 	return
+}
+
+func (api *APIController) UserUpdateOwnPassword(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	oldPassword, newPassword string,
+) (err error) {
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"method":   "api.UserUpdateOwnPassword",
+		"username": cu.Username,
+	})
+
+	pwdHash, err := api.access.UserGetPasswordByID(ctx, cu.ID)
+	if err != nil {
+		eMsg := "error in api.access.UserGetPasswordByID"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if pwdHash == "" {
+		eMsg := "password is not found"
+		clog.Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(pwdHash), []byte(oldPassword))
+	if err != nil {
+		eMsg := "old password is not correct"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_FB_pwrd_USER)
+		return
+	}
+
+	newPwrdHashByte, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		eMsg := "error in bcrypt.GenerateFromPassword"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	newPwrdHash := string(newPwrdHashByte)
+
+	err = api.access.UserUpdateOwnPassword(ctx, cu, newPwrdHash)
+	if err != nil {
+		eMsg := "error in api.access.UserUpdateOwnPassword"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	return nil
 }
 
 //GET

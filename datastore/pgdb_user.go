@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -46,35 +46,6 @@ const (
 	sqlDeleteUser                     = `DELETE FROM tbl_user WHERE id = $1`
 	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
 )
-
-func (d *PgAccess) UserUpdateOwnPassword(
-	ctx context.Context,
-	ai *responses.ActionInfo,
-	newPassword string,
-) (err error) {
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserGetByID",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		_, err = conn.Exec(ctx, sqlUpdateUserPassword, newPassword, time.Now().UTC(), ai.ID)
-		if err != nil {
-			eMsg := "error in sqlUpdateUserOwnPassword"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 func (d *PgAccess) AdminUpdatePassword(
 	ctx context.Context,
@@ -131,48 +102,6 @@ func (d *PgAccess) UserDelete(
 }
 
 ///GET
-
-func (d *PgAccess) UserGetPasswordByID(
-	ctx context.Context,
-	id string,
-) (pwdHash string, err error) {
-
-	clog := log.WithFields(log.Fields{
-		"method": "PgAccess.UserGetPasswordByID",
-	})
-
-	err = d.runQuery(ctx, clog, func(conn *pgxpool.Conn) (err error) {
-
-		defer func() {
-			if err != nil {
-				pwdHash = ""
-			}
-		}()
-
-		row := conn.QueryRow(ctx, sqlUserGetPasswordByID, id)
-		err = row.Scan(&pwdHash)
-		if err != nil {
-			if err == pgx.ErrNoRows {
-				err = nil
-				pwdHash = ""
-				return
-			}
-
-			eMsg := "error in sqlUserGetPasswordByID"
-			clog.WithError(err).Error(eMsg)
-			err = errors.Wrap(err, eMsg)
-			return
-		}
-
-		return
-	})
-
-	if err != nil {
-		eMsg := "Error in d.runQuery()"
-		clog.WithError(err).Error(eMsg)
-	}
-	return
-}
 
 func (d *PgAccess) UserAutocompleteList(
 	ctx context.Context,
@@ -360,6 +289,40 @@ func (d *MgAccess) UserUpdate(
 	return
 }
 
+func (d *MgAccess) UserUpdateOwnPassword(
+	ctx context.Context,
+	cu *responses.ActionInfo,
+	newPassword string,
+) (err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserGetByID",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	workerColl := db.Collection("user")
+
+	filterUser := bson.M{"_id": cu.ID}
+
+	updateUser := bson.M{"$set": bson.M{
+		"password": newPassword,
+	}}
+
+	_, err = workerColl.UpdateOne(ctx, filterUser, updateUser)
+	if err != nil {
+		eMsg := "error in Updating user's password"
+		clog.WithError(err).Error(eMsg)
+		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	return
+}
+
 //GET
 
 func (d *MgAccess) UserGetByID(
@@ -399,6 +362,44 @@ func (d *MgAccess) UserGetByID(
 	u.HashedPassword = ""
 
 	item = &u
+
+	return
+}
+
+func (d *MgAccess) UserGetPasswordByID(
+	ctx context.Context,
+	id primitive.ObjectID,
+) (pwdHash string, err error) {
+
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.UserGetPasswordByID",
+	})
+
+	client, err := mongo.Connect(ctx, d.ClientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	db := client.Database("idea-share")
+	coll := db.Collection("user")
+
+	options := options.FindOne()
+	options.Projection = bson.M{"_id": 0, "password": 1}
+
+	var u bson.M
+	err = coll.FindOne(ctx, bson.M{"_id": id}, options).Decode(&u)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			err = nil
+			pwdHash = ""
+			return
+		}
+		eMsg := "Error in Find user's password with ID"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	pwdHash = u["password"].(string)
 
 	return
 }

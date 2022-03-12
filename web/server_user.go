@@ -14,61 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// func (s *Server) HandleUserUpdateOwnPassword(w http.ResponseWriter, r *http.Request) {
-// 	handleName := "HandleUserUpdateOwnPassword"
-
-// 	ctx := r.Context()
-// 	ipAddress, err := helpers.GetIP(r)
-// 	clog := log.WithContext(ctx).WithFields(log.Fields{
-// 		"remote-addr": ipAddress,
-// 		"uri":         r.RequestURI,
-// 	})
-
-// 	requestLang := helpers.GetRequestLang(r)
-
-// 	if err != nil {
-// 		eMsg := "couldn't get ip address"
-// 		clog.WithError(err).Error(eMsg)
-// 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-
-// 	roles := []responses.UserRole{
-// 		responses.UserRoleAdmin,
-// 		responses.UserRoleUser,
-// 	}
-// 	cu, err := s.UserRequirments(ctx, w, r, roles)
-// 	if err != nil {
-// 		eMsg := "UserRequirments error in " + handleName
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, requestLang)
-// 		return
-// 	}
-// 	oldPassword := r.FormValue("old_password")
-// 	newPassword := r.FormValue("new_password")
-
-// 	if !helpers.IsPasswordValid(newPassword) {
-// 		emsg := "password is not compatible"
-// 		clog.WithError(err).Error(emsg)
-// 		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	err = s.c.UserUpdateOwnPassword(ctx, cu, oldPassword, newPassword)
-// 	if err != nil {
-// 		eMsg := "error in s.c.UserUpdateOwnPassword"
-// 		clog.WithError(err).Error(eMsg)
-// 		errs.SendResponse(w, err, nil, clog, cu.Language)
-// 		return
-// 	}
-
-// 	err = responses.ErrOK
-// 	errs.SendResponse(w, err, nil, clog, cu.Language)
-// 	clog.Info(handleName + " success")
-// }
-
 // func (s *Server) HandleAdminUpdatePassword(w http.ResponseWriter, r *http.Request) {
 // 	handleName := "HandleAdminUpdatePassword"
 
@@ -550,7 +495,62 @@ func (s *Server) HandleUserUpdate(w http.ResponseWriter, r *http.Request) {
 	clog.Info(handleName + " success")
 }
 
-//GET
+func (s *Server) HandleUserUpdateOwnPassword(w http.ResponseWriter, r *http.Request) {
+	handleName := "HandleUserUpdateOwnPassword"
+
+	ctx := r.Context()
+	ipAddress, err := helpers.GetIP(r)
+	clog := log.WithContext(ctx).WithFields(log.Fields{
+		"remote-addr": ipAddress,
+		"uri":         r.RequestURI,
+	})
+
+	requestLang := helpers.GetRequestLang(r)
+
+	if err != nil {
+		eMsg := "couldn't get ip address"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+
+	roles := []responses.UserRole{
+		responses.UserRoleAdmin,
+		responses.UserRoleUser,
+	}
+	cu, err := s.UserRequirments(ctx, w, r, roles)
+	if err != nil {
+		eMsg := "UserRequirments error in " + handleName
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, requestLang)
+		return
+	}
+	oldPassword := r.FormValue("old_password")
+	newPassword := r.FormValue("new_password")
+
+	if !helpers.IsPasswordValid(newPassword) {
+		emsg := "password is not compatible"
+		clog.WithError(err).Error(emsg)
+		err = errs.NewHttpErrorBadRequest(errs.ERR_BR)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = s.c.UserUpdateOwnPassword(ctx, cu, oldPassword, newPassword)
+	if err != nil {
+		eMsg := "error in s.c.UserUpdateOwnPassword"
+		clog.WithError(err).Error(eMsg)
+		errs.SendResponse(w, err, nil, clog, cu.Language)
+		return
+	}
+
+	err = responses.ErrOK
+	errs.SendResponse(w, err, nil, clog, cu.Language)
+	clog.Info(handleName + " success")
+}
+
+// GET
 
 func (s *Server) HandleUserGet(w http.ResponseWriter, r *http.Request) {
 	handleName := "HandleUserGet"

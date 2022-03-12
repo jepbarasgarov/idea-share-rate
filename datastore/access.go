@@ -23,7 +23,7 @@ type Access interface {
 
 	UserGetPasswordByID(
 		ctx context.Context,
-		id string,
+		id primitive.ObjectID,
 	) (pwdHash string, err error)
 
 	UserUpdateOwnPassword(
