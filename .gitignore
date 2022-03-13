@@ -10,5 +10,4 @@ static/
 main.log
 .scannerwork
 Unix executable
-.env
 logs/*

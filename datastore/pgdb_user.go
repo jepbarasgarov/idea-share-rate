@@ -14,37 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const (
-	sqlUserGetByUsername   = `SELECT id, firstname, lastname , role, status, password FROM tbl_user  WHERE username = $1`
-	sqlUserGetByID         = `SELECT username, firstname, lastname, role, status FROM tbl_user WHERE id = $1`
-	sqlUserGetPasswordByID = `SELECT password FROM tbl_user WHERE id=$1`
-	sqlUserCreate          = `INSERT INTO tbl_user(username, password, firstname, lastname, status, role) VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
-	sqlSelectDirectorIDs   = `SELECT ARRAY(SELECT id FROM tbl_user WHERE role = $1 AND status = $2)`
-	sqlSelectDirectorList  = `SELECT us.id, us.firstname, us.lastname, position.name, department.id, department.name FROM tbl_user us
-	INNER JOIN tbl_department department ON us.department_id = department.id
-	INNER JOIN tbl_position position ON us.position_id = position.id
-	WHERE us.role = $1 AND us.status = $2`
-	sqlSelectStaffDepList = `SELECT us.id, us.firstname, us.lastname, position.name, department.id, department.name FROM tbl_user us
-	INNER JOIN tbl_department department ON us.department_id = department.id
-	INNER JOIN tbl_position position ON us.position_id = position.id
-	WHERE us.role = $1 AND us.status = $2 AND department.id = $3`
-	sqlSelectHeadDepList = `SELECT us.id, us.firstname, us.lastname, position.name, department.id, department.name FROM tbl_user us
-	INNER JOIN tbl_department department ON us.department_id = department.id
-	INNER JOIN tbl_position position ON us.position_id = position.id
-	WHERE us.role = $1 AND us.status = $2`
-	sqlGetUserList                    = `SELECT id, username, firstname, lastname, role, status FROM tbl_user WHERE id <> $1 LIMIT $2 OFFSET $3`
-	sqlCountUsers                     = `SELECT COUNT(*) FROM tbl_user WHERE  id <> $1`
-	sqlRemoveHeadOfDepartment         = `UPDATE tbl_user SET role = $1 WHERE department_id = $2 AND role = $3 AND status <> $4`
-	sqlUpdateUserOwnData              = `UPDATE tbl_user SET phone = $1, email = $2, update_ts = $3 WHERE id = $4`
-	sqlUpdateUserPassword             = `UPDATE tbl_user SET password = $1, update_ts = $2 WHERE id = $3`
-	sqlGetLastDocListGotTimeOfUser    = `SELECT last_doc_get FROM tbl_user WHERE id = $1`
-	sqlUpdateLastDocListGotTimeOfUser = `UPDATE tbl_user SET last_doc_get = $1 WHERE id = $2`
-	sqlUserAutocompleteList           = `SELECT id, role, firstname, lastname from tbl_user WHERE status <> $1`
-	sqlUpdateUser                     = `UPDATE tbl_user SET username = $1, firstname = $2, lastname = $3,role = $4, status = $5 WHERE id = $6`
-	sqlDeleteUser                     = `DELETE FROM tbl_user WHERE id = $1`
-	sqlSetTwoFAUser                   = `UPDATE tbl_user SET two_fa_key = $1 WHERE id = $2`
-)
-
 //////////////////////////////////////////////////////////////////////MONGO/////////////////////////////////////////////////////////////////////////////////
 
 func (d *MgAccess) UserGetByUsername(
