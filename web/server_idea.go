@@ -449,6 +449,7 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var Filter models.IdeaFilter
+
 	Filter.UserID = cu.ID
 
 	if len(r.FormValue("name")) != 0 {
@@ -463,8 +464,8 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 
 	dateStart, err := helpers.ChangeStringToDate(r.FormValue("start"))
 	if err == nil && !dateStart.IsZero() {
-		start := primitive.NewDateTimeFromTime(dateStart)
-		Filter.BeginDate = &start
+		begin := primitive.NewDateTimeFromTime(dateStart)
+		Filter.BeginDate = &begin
 	}
 
 	dateEnd, err := helpers.ChangeStringToDate(r.FormValue("end"))
@@ -494,7 +495,7 @@ func (s *Server) HandleIdeaListGetPdf(w http.ResponseWriter, r *http.Request) {
 		Filter.Limit = 50
 	}
 
-	Filter.Offset, err = strconv.Atoi(r.FormValue("offset"))
+	Filter.Offset, err = strconv.Atoi(r.FormValue("skip"))
 	if err != nil {
 		Filter.Offset = 0
 	}
