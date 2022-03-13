@@ -6,34 +6,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UserSpecData struct {
-	ID             string
-	Username       string
-	Firstname      string
-	Lastname       string
-	HashedPassword string
-	Role           responses.UserRole
-	Status         responses.UserStatus
-}
-
-type UserLightData struct {
-	ID        string
-	Role      responses.UserRole
-	Firstname string
-	Lastname  string
-}
-
-type UserList struct {
-	Total  int            `json:"total"`
-	Result []UserSpecData `json:"result"`
-}
-
 type Tokens struct {
 	AccessToken  string
 	RefreshToken string
 }
-
-/////////////////MONGO/////////////////////////////////////////
 
 type UserCreate struct {
 	Username  string

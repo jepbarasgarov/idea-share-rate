@@ -28,21 +28,3 @@ const (
 	Russian Lang = "RU"
 	English Lang = "EN"
 )
-
-type BitData struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type BitDataNull struct {
-	ID   *string `json:"id,omitempty"`
-	Name *string `json:"name"`
-}
-
-type NameData struct {
-	Name string `json:"name"`
-}
-
-type IdData struct {
-	ID string `json:"id"`
-}

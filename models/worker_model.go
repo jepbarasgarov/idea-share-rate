@@ -15,15 +15,6 @@ type WorkerUpdate struct {
 	Position  string
 }
 
-type WorkerLightData struct {
-	ID        string
-	Firstname string
-	Lastname  string
-	Position  string
-}
-
-//////////////////////////////////////////////////////////////////////BSON////////////////////////////////////////////////////////////////////////////////
-
 type WorkerBsonModelInIdea struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Firstname string             `bson:"firstname,omitempty" json:"firstname"`

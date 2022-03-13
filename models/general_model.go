@@ -7,8 +7,3 @@ type ParsedFile struct {
 	FileHeader  *multipart.FileHeader
 	ContentType string
 }
-
-type LimitOffset struct {
-	Limit  int
-	Offset int
-}

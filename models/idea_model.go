@@ -107,8 +107,6 @@ type MechanicUpdate struct {
 	NewMech string
 }
 
-////////////////////////////////////////////////////////////////////////BSON///////////////////////////////////////////////////////////////
-
 type RatingStructInIdea struct {
 	CriteriaID    primitive.ObjectID `bson:"criteria_id,omitempty"`
 	CrieteriaName string             `bson:"criteria_name,omitempty"`

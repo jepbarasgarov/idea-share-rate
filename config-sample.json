@@ -18,7 +18,7 @@
     },
 	"prefix_for_redis":{
 		"refresh_token":"USER_REFRESH_TOKEN:",
-        "ip_resrtict":"IP_RESTRICT_TEMPORARY:"
+        "worker_resrtict":"WORKER_RESTRICT_TEMPORARY:"
 	},
     "static": "static",
     "static_dir": "static"
