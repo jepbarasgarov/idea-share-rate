@@ -270,6 +270,7 @@ func (d *MgAccess) PositionList(
 		eMsg := "Error in Find"
 		clog.WithError(err).Error(eMsg)
 	}
+
 	var pstns []bson.M
 
 	for cursor.Next(ctx) {

@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -137,6 +138,47 @@ func NewMgAccess(conf *config.Config) (mg *MgAccess, err error) {
 		return
 	}
 
+	ValidateDatabase(client)
+
 	mg = &MgAccess{ClientOptions: clientOptions, client: client}
 	return
+
+}
+
+func ValidateDatabase(client *mongo.Client) {
+
+	db := client.Database("idea-share")
+
+	x := db.RunCommand(context.TODO(), bson.D{
+		{"collMod", "worker"},
+		{"validator", bson.M{
+			"$jsonSchema": bson.M{
+				"bsonType": "object",
+				"required": []string{"firstname", "lastname", "position"},
+				"properties": bson.M{
+					"firstname": bson.M{
+						"bsonType":    "string",
+						"maxLength":   64,
+						"minLength":   0,
+						"description": "must be a string and is required",
+					},
+					"lastname": bson.M{
+						"bsonType":    "string",
+						"maxLength":   64,
+						"minLength":   0,
+						"description": "must be a string and is required",
+					},
+					"position": bson.M{
+						"bsonType":    "string",
+						"maxLength":   128,
+						"minLength":   0,
+						"description": "must be a string and is required",
+					},
+				},
+			},
+		}},
+		{"validationLevel", "strict"},
+	})
+
+	fmt.Println(x.Err())
 }

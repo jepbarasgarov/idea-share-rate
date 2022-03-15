@@ -114,7 +114,7 @@ func ReadConfig(source string) (err error) {
 			os.Getenv("DB_PASSWORD"),
 			os.Getenv("DB_DATABASE"),
 		),
-		MgConn:         os.Getenv("MG_CONN"),
+		MgConn:         os.Getenv("MG_CONN_LOCAL"),
 		Renderer:       os.Getenv("RENDERER_URL"),
 		RedisConn:      fmt.Sprintf("%v:%v", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
 		RedisDB:        redisDB,
