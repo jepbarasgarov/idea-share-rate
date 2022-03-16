@@ -33,7 +33,6 @@ func (api *APIController) UserLogin(
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
 	}
-
 	if user == nil || user.Status == responses.Blocked {
 		eMsg := "user not found"
 		clog.WithError(err).Error(eMsg)

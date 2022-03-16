@@ -35,7 +35,7 @@ func (d *MgAccess) UserGetByUsername(
 	coll := db.Collection("user")
 
 	var u models.UserSpecDataBson
-	err = coll.FindOne(ctx, bson.M{"username": username}).Decode(&u)
+	err = coll.FindOne(ctx, bson.M{}).Decode(&u)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = nil

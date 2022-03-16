@@ -772,6 +772,8 @@ func (d *MgAccess) CriteriaCreate(
 
 	row, err := coll.InsertOne(ctx, bson.D{
 		{Key: "name", Value: CriteriaName},
+		{Key: "create_ts", Value: time.Now().UTC()},
+		{Key: "update_ts", Value: time.Now().UTC()},
 	})
 	if err != nil {
 		eMsg := "An error occurred on Insert one"
@@ -871,7 +873,7 @@ func (d *MgAccess) CriteriaUpdate(
 	collCriteria := db.Collection("criteria")
 
 	filter := bson.M{"_id": criter.ID}
-	update := bson.M{"$set": bson.M{"name": criter.Name}}
+	update := bson.M{"$set": bson.M{"name": criter.Name, "update_ts": time.Now().UTC()}}
 
 	_, err = collCriteria.UpdateOne(ctx, filter, update)
 	if err != nil {

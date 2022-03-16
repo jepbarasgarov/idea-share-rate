@@ -3,6 +3,7 @@ package datastore
 import (
 	"belli/onki-game-ideas-mongo-backend/models"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +36,8 @@ func (d *MgAccess) WorkerCreate(
 		{Key: "firstname", Value: worker.Firstname},
 		{Key: "lastname", Value: worker.Lastname},
 		{Key: "position", Value: worker.Position},
+		{Key: "create_ts", Value: time.Now().UTC()},
+		{Key: "update_ts", Value: time.Now().UTC()},
 	})
 	if err != nil {
 		eMsg := "An error occurred on Insert one"
@@ -123,7 +126,7 @@ func (d *MgAccess) WorkerUpdate(
 	filterWorker := bson.M{"_id": worker.ID}
 	filterWorkerInIdea := bson.M{"worker._id": worker.ID}
 
-	updateWorker := bson.M{"$set": bson.M{"firstname": worker.Firstname, "lastname": worker.Lastname, "position": worker.Position}}
+	updateWorker := bson.M{"$set": bson.M{"firstname": worker.Firstname, "lastname": worker.Lastname, "position": worker.Position, "update_ts": time.Now().UTC()}}
 	updateWorkerInIdea := bson.M{"$set": bson.M{"worker.firstname": worker.Firstname, "worker.lastname": worker.Lastname, "worker.position": worker.Position}}
 
 	_, err = workerColl.UpdateOne(ctx, filterWorker, updateWorker)

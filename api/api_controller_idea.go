@@ -98,6 +98,7 @@ func (api *APIController) IdeaCreate(
 	}
 
 	breakingIndex := -1
+	Idea.AllFiles = make([]models.SketchSturctInIdea, 0)
 	for i, pFile := range Idea.Files {
 		path, err := helpers.ProcessFile(ctx, config.Conf.StaticDir, &pFile)
 		if err != nil {
@@ -137,7 +138,7 @@ func (api *APIController) IdeaCreate(
 		return
 	}
 
-	_ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.LastName, time.Minute*5)
+	_ = api.cache.WorkerRestrictWithExpiry(ctx, worker.Firstname+worker.LastName, time.Second*5)
 
 	return
 }
@@ -541,7 +542,7 @@ func (api *APIController) MechanicCreate(
 	})
 	err = api.access.MechanicUpsert(ctx, mechanic)
 	if err != nil {
-		eMsg := "error in api.access.GenreUpsert"
+		eMsg := "error in api.access.MechanicUpsert"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
 		return
