@@ -19,3 +19,5 @@ var validation =  {
 
 
 db.createCollection("genre",validation)
+db.genre.createIndex({"name":1}, {unique:true})
+

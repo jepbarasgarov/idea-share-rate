@@ -18,3 +18,4 @@ var validation =  {
 
 
 db.createCollection("position",validation)
+db.position.createIndex({"name":1}, {unique:true})

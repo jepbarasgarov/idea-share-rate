@@ -22,5 +22,5 @@ var validation =  {
         "validationLevel": "strict",
 }
 
-
 db.createCollection("criteria",validation)
+db.criteria.createIndex({"name":1}, {unique:true})

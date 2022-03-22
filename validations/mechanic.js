@@ -18,3 +18,5 @@ var validation =  {
 
 
 db.createCollection("mechanic",validation)
+db.mechanic.createIndex({"name":1}, {unique:true})
+

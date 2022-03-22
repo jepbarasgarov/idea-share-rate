@@ -49,6 +49,8 @@ var validation =  {
 
 
 db.createCollection("user",validation)
+db.user.createIndex({"username":1}, {unique:true})
+
 
 
 

@@ -115,4 +115,8 @@ var validationIdea =  {
 
 
 db.createCollection("idea",validationIdea)
+db.idea.createIndex({"worker._id":1})
+db.idea.createIndex({"date":1})
+
+
 
