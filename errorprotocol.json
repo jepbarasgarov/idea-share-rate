@@ -127,6 +127,12 @@
         "EN": "Genre is already in use"
     },
 
+    "ERR_GENRE_has_IDEA":{
+        "TM": "Žanryň degişli ideasy bar!",
+        "RU": "Žanryň degişli ideasy bar!",
+        "EN": "Genre is related to some idea"
+    },
+
     "ERR_NF_MECH": {
         "TM": "Mehanika tapylmady!",
         "RU": "Mehanika tapylmady!",
@@ -143,5 +149,10 @@
         "TM": "Ip adresi üçin idea girizmek wagtlaýyn gadagan.",
         "RU": "Ip adresi üçin idea girizmek wagtlaýyn gadagan.",
         "EN": "You've submitted recently. Try later."
+    },
+    "ERR_MECH_has_IDEA":{
+        "TM": "Mehanika degişli ideasy bar!",
+        "RU": "Mehanika degişli ideasy bar!",
+        "EN": "Mechanic is related to some idea"
     }
 }

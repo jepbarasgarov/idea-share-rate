@@ -95,11 +95,13 @@ const (
 	ERR_UNIQUE_CRITERIA    ConflictKey = "ERR_UNIQUE_CRITERIA"
 	ERR_CRITERIA_HAS_RATES ForbidenKey = "ERR_CRITERIA_HAS_RATES"
 
-	ERR_NF_GENRE     NotFoundKey = "ERR_NF_GENRE"
-	ERR_UNIQUE_GENRE ConflictKey = "ERR_UNIQUE_GENRE"
+	ERR_NF_GENRE       NotFoundKey = "ERR_NF_GENRE"
+	ERR_UNIQUE_GENRE   ConflictKey = "ERR_UNIQUE_GENRE"
+	ERR_GENRE_has_IDEA ForbidenKey = "ERR_GENRE_has_IDEA"
 
-	ERR_NF_MECH     NotFoundKey = "ERR_NF_MECH"
-	ERR_UNIQUE_MECH ConflictKey = "ERR_UNIQUE_MECH"
+	ERR_NF_MECH       NotFoundKey = "ERR_NF_MECH"
+	ERR_UNIQUE_MECH   ConflictKey = "ERR_UNIQUE_MECH"
+	ERR_MECH_has_IDEA ForbidenKey = "ERR_MECH_has_IDEA"
 )
 
 //codes

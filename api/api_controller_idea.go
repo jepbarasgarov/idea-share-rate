@@ -461,6 +461,21 @@ func (api *APIController) GenreDelete(
 		return
 	}
 
+	isGenreRelatedToIdea, err := api.access.IsGenreRelatedToIdea(ctx, genre)
+	if err != nil {
+		eMsg := "error in api.access.IsGenreRelatedToIdea"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if isGenreRelatedToIdea {
+		eMsg := "Genre is related to some idea"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_GENRE_has_IDEA)
+		return
+	}
+
 	err = api.access.GenreDelete(ctx, genre)
 	if err != nil {
 		eMsg := "error in api.access.GenreDelete"
@@ -596,6 +611,21 @@ func (api *APIController) MechanicDelete(
 		eMsg := "mechanic not found"
 		clog.WithError(err).Error(eMsg)
 		err = errs.NewHttpErrorNotFound(errs.ERR_NF_MECH)
+		return
+	}
+
+	isMechanicRelatedToIdea, err := api.access.IsMechanicRelatedToIdea(ctx, mechanic)
+	if err != nil {
+		eMsg := "error in api.access.IsMechanicRelatedToIdea"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorInternalError(errs.ERR_IE)
+		return
+	}
+
+	if isMechanicRelatedToIdea {
+		eMsg := "Mechanic is related to some idea"
+		clog.WithError(err).Error(eMsg)
+		err = errs.NewHttpErrorForbidden(errs.ERR_MECH_has_IDEA)
 		return
 	}
 

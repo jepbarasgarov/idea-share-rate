@@ -312,7 +312,7 @@ func (d *MgAccess) IdeaGet(
 			item = nil
 			return
 		}
-		eMsg := "Error in Find criteria with ID"
+		eMsg := "Error in Find Idea with ID"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
@@ -568,6 +568,40 @@ func (d *MgAccess) GenreUpdate(
 	return
 }
 
+func (d *MgAccess) IsGenreRelatedToIdea(
+	ctx context.Context,
+	GenreName string,
+) (item bool, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IsGenreRelatedToIdea",
+	})
+
+	item = true
+
+	db := d.client.Database("idea-share")
+	coll := db.Collection("idea")
+
+	MatchStage := bson.M{"genre": GenreName}
+	options := options.FindOne()
+	options.Projection = bson.M{"_id": 1}
+
+	var ID bson.M
+	err = coll.FindOne(ctx, MatchStage, options).Decode(&ID)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+		item = false
+		return
+	}
+
+	if err != nil {
+		eMsg := "Error in FindOne idea with exact genre"
+		clog.WithError(err).Error(eMsg)
+		return
+	}
+
+	return
+}
+
 // MECHANICS
 
 func (d *MgAccess) MechanicUpsert(
@@ -744,6 +778,40 @@ func (d *MgAccess) MechanicUpdate(
 		eMsg := "error in removing old mechanic"
 		clog.WithError(err).Error(eMsg)
 		err = errors.Wrap(err, eMsg)
+		return
+	}
+
+	return
+}
+
+func (d *MgAccess) IsMechanicRelatedToIdea(
+	ctx context.Context,
+	Mechanic string,
+) (item bool, err error) {
+	clog := log.WithFields(log.Fields{
+		"method": "PgAccess.IsMechanicRelatedToIdea",
+	})
+
+	item = true
+
+	db := d.client.Database("idea-share")
+	coll := db.Collection("idea")
+
+	MatchStage := bson.M{"mechanics": Mechanic}
+	options := options.FindOne()
+	options.Projection = bson.M{"_id": 1}
+
+	var ID bson.M
+	err = coll.FindOne(ctx, MatchStage, options).Decode(&ID)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+		item = false
+		return
+	}
+
+	if err != nil {
+		eMsg := "Error in FindOne Idea with exact mechanic"
+		clog.WithError(err).Error(eMsg)
 		return
 	}
 

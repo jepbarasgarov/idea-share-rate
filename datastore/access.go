@@ -118,6 +118,11 @@ type Access interface {
 		GenreName string,
 	) (err error)
 
+	IsGenreRelatedToIdea(
+		ctx context.Context,
+		GenreName string,
+	) (item bool, err error)
+
 	/////////////////////////////////////////////////////////////--------------MECHANICS
 	MechanicList(
 		ctx context.Context,
@@ -142,6 +147,11 @@ type Access interface {
 		ctx context.Context,
 		MechName string,
 	) (err error)
+
+	IsMechanicRelatedToIdea(
+		ctx context.Context,
+		Mechanic string,
+	) (item bool, err error)
 
 	////////////////////////////////////////////////////////////----------------IDEA
 	IdeaCreate(
