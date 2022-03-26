@@ -838,20 +838,50 @@ func (d *MgAccess) CriteriaCreate(
 	db := d.client.Database("idea-share")
 	coll := db.Collection("criteria")
 
-	row, err := coll.InsertOne(ctx, bson.D{
-		{Key: "name", Value: CriteriaName},
-		{Key: "create_ts", Value: time.Now().UTC()},
-		{Key: "update_ts", Value: time.Now().UTC()},
-	})
+	session, err := d.client.StartSession()
 	if err != nil {
-		eMsg := "An error occurred on Insert one"
+		eMsg := "Error ocurred while starting session"
 		clog.WithError(err).Error(eMsg)
 		return
 	}
+	defer session.EndSession(context.Background())
 
-	item = &models.CriteriaSpecData{
-		ID:   row.InsertedID.(primitive.ObjectID),
-		Name: CriteriaName,
+	err = mongo.WithSession(context.Background(), session, func(sessionContext mongo.SessionContext) error {
+		if err = session.StartTransaction(); err != nil {
+			return err
+		}
+		row, err := coll.InsertOne(sessionContext, bson.D{
+			{Key: "name", Value: CriteriaName},
+			{Key: "create_ts", Value: time.Now().UTC()},
+			{Key: "update_ts", Value: time.Now().UTC()},
+		})
+		if err != nil {
+			eMsg := "An error occurred on Insert one"
+			clog.WithError(err).Error(eMsg)
+			return err
+		}
+
+		item = &models.CriteriaSpecData{
+			ID:   row.InsertedID.(primitive.ObjectID),
+			Name: CriteriaName,
+		}
+
+		if err = session.CommitTransaction(sessionContext); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		if abortErr := session.AbortTransaction(context.Background()); abortErr != nil {
+			eMsg := "Error ocurred while aborting session"
+			clog.WithError(err).Error(eMsg)
+			return
+		}
+
+		eMsg := "Error ocurred in the middle of session"
+		clog.WithError(err).Error(eMsg)
+		return
 	}
 
 	return
