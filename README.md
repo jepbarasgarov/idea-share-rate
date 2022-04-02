@@ -1,4 +1,4 @@
-> # ONKI-GAME-IDEA
+> # Idea Share Rate
 
 > ## Aim
 
